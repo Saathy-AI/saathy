@@ -55,11 +55,7 @@ jobs:
       run: poetry run pytest --cov=src/saathy --cov-report=xml
       # --cov-fail-under=80  # Temporarily disabled for development
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        fail_ci_if_error: true
+
 
   image:
     needs: test
