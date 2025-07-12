@@ -1,0 +1,20 @@
+---
+description: Folder & module layout for the FastAPI service
+globs: src/saathy/**
+alwaysApply: true
+---
+
+# Directory Convention  
+
+src/saathy/
+├── api.py # FastAPI instance
+├── config.py # Pydantic Settings singleton
+├── vector/ # Qdrant repository layer
+│ └── repository.py
+├── scheduler.py # APScheduler init
+└── main.py # Gunicorn/Uvicorn entrypoint
+
+
+* All long-running background jobs live in `scheduler.py`.  
+* Do **not** create additional sub-packages in Sprint 1.  
+* `__all__` exports should stay minimal to keep import graph clear.
