@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Saathy FastAPI service
 
 # Builder stage
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -21,10 +21,10 @@ COPY pyproject.toml poetry.lock* ./
 RUN poetry config virtualenvs.create false
 
 # Install dependencies
-RUN poetry install --only=main --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi
 
 # Runtime stage
-FROM python:3.11-slim as runtime
+FROM python:3.11-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
