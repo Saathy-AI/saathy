@@ -28,6 +28,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 target-version = "py39"
 line-length = 88
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -43,10 +45,10 @@ ignore = [
     "C901",  # too complex
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["saathy"]
 
 [tool.black]
@@ -78,4 +80,4 @@ addopts = [
     "--cov-report=html",
     "--cov-fail-under=80",
 ]
-asyncio_mode = "auto" 
+asyncio_mode = "auto"

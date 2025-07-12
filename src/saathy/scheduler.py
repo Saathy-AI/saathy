@@ -2,7 +2,6 @@
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-
 scheduler = AsyncIOScheduler()
 
 
@@ -13,4 +12,4 @@ def start_scheduler() -> None:
 
 def stop_scheduler() -> None:
     """Stop the background job scheduler."""
-    scheduler.shutdown() 
+    scheduler.shutdown()

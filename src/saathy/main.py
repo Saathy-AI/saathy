@@ -2,7 +2,6 @@
 
 import uvicorn
 
-from saathy.api import app
 from saathy.config import settings
 
 
@@ -17,4 +16,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

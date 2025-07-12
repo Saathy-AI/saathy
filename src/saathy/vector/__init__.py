@@ -1,3 +1,3 @@
 """Vector operations package."""
 
-__all__ = [] 
+__all__ = []

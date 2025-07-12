@@ -4,11 +4,11 @@ globs: src/**/*.py, tests/**/*.py
 alwaysApply: true
 ---
 
-# Python Style Guide  
+# Python Style Guide
 
-* Use `typing` everywhere (return types, generics).  
-* Import order: stdlib › third-party › first-party (enforced by *ruff*).  
-* Prefer f-strings; never use `%` formatting.  
-* Public functions/methods must have one-line docstrings.  
-* Raise explicit exceptions (`ValueError`, `TypeError`) not bare `Exception`.  
-* Write pure functions unless interacting with I/O or the network.  
+* Use `typing` everywhere (return types, generics).
+* Import order: stdlib › third-party › first-party (enforced by *ruff*).
+* Prefer f-strings; never use `%` formatting.
+* Public functions/methods must have one-line docstrings.
+* Raise explicit exceptions (`ValueError`, `TypeError`) not bare `Exception`.
+* Write pure functions unless interacting with I/O or the network.

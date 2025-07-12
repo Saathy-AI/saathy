@@ -28,4 +28,4 @@ services:
 
 volumes:
   qdata:
-    driver: local 
+    driver: local

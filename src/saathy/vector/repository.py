@@ -1,7 +1,5 @@
 """Qdrant vector database repository layer."""
 
-from typing import Any
-
 from qdrant_client import QdrantClient
 
 
@@ -19,4 +17,4 @@ class VectorRepository:
             self.client.get_collections()
             return True
         except Exception:
-            return False 
+            return False

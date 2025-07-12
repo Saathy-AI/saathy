@@ -1,4 +1,4 @@
 # This file ensures the ssl directory is tracked in git
 # Place your SSL certificates here:
 # - cert.pem (SSL certificate)
-# - key.pem (SSL private key) 
+# - key.pem (SSL private key)

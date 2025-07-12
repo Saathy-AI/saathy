@@ -19,7 +19,7 @@ TESTS_FAILED=0
 test_file() {
     local file="$1"
     local description="$2"
-    
+
     if [[ -f "$file" ]]; then
         echo -e "${GREEN}✓${NC} $description"
         ((TESTS_PASSED++))
@@ -33,7 +33,7 @@ test_file() {
 test_executable() {
     local file="$1"
     local description="$2"
-    
+
     if [[ -f "$file" && -x "$file" ]]; then
         echo -e "${GREEN}✓${NC} $description"
         ((TESTS_PASSED++))
@@ -48,7 +48,7 @@ test_content() {
     local file="$1"
     local pattern="$2"
     local description="$3"
-    
+
     if [[ -f "$file" && grep -q "$pattern" "$file" ]]; then
         echo -e "${GREEN}✓${NC} $description"
         ((TESTS_PASSED++))
@@ -62,7 +62,7 @@ test_content() {
 test_absence() {
     local file="$1"
     local description="$2"
-    
+
     if [[ ! -f "$file" && ! -d "$file" ]]; then
         echo -e "${GREEN}✓${NC} $description"
         ((TESTS_PASSED++))
@@ -186,4 +186,4 @@ if [[ $TESTS_FAILED -eq 0 ]]; then
 else
     echo -e "${RED}❌ Some tests failed. Please review the issues above.${NC}"
     exit 1
-fi 
+fi

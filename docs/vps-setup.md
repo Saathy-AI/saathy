@@ -271,7 +271,7 @@ htop
    ```bash
    # Check certificate validity
    openssl x509 -in nginx/ssl/cert.pem -text -noout
-   
+
    # Test nginx configuration
    docker exec saathy-nginx-1 nginx -t
    ```
@@ -280,10 +280,10 @@ htop
    ```bash
    # Check container logs
    docker-compose -f docker-compose.prod.yml logs saathy-api
-   
+
    # Check disk space
    df -h
-   
+
    # Check Docker daemon
    sudo systemctl status docker
    ```
@@ -292,7 +292,7 @@ htop
    ```bash
    # Check if containers are running
    docker ps
-   
+
    # Check internal connectivity
    docker exec saathy-nginx-1 curl -f http://saathy-api:8000/healthz
    ```
@@ -303,7 +303,7 @@ htop
    ```bash
    # Edit limits
    sudo nano /etc/security/limits.conf
-   
+
    # Add:
    * soft nofile 65536
    * hard nofile 65536
@@ -313,7 +313,7 @@ htop
    ```bash
    # Check Docker storage driver
    docker info | grep "Storage Driver"
-   
+
    # Clean up unused resources
    docker system prune -a
    ```
@@ -345,4 +345,4 @@ For issues and questions:
 2. Verify configuration: `docker-compose -f docker-compose.prod.yml config`
 3. Check system resources: `htop`, `df -h`, `free -h`
 4. Review this guide for common solutions
-5. Open an issue on GitHub with detailed error information 
+5. Open an issue on GitHub with detailed error information

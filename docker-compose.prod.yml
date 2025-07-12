@@ -83,4 +83,4 @@ volumes:
   api_logs:
     driver: local
   nginx_logs:
-    driver: local 
+    driver: local
