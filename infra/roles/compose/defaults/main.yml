@@ -1,0 +1,10 @@
+---
+# GitHub repository settings
+github_owner: "{{ lookup('env', 'GITHUB_REPOSITORY_OWNER') | default('your-username') }}"
+
+# Domain settings
+domain: "your-domain.com"
+
+# Application settings
+app_name: "saathy"
+app_port: 8000 

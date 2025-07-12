@@ -141,6 +141,53 @@ Once the application is running, visit:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
+## Deploy to VPS
+
+### Prerequisites
+
+- Ubuntu 20.04+ server
+- SSH access with sudo privileges
+- Domain name (optional, for HTTPS)
+
+### Setup
+
+1. **Update inventory**
+   ```bash
+   # Edit infra/inventory.ini
+   # Replace YOUR_SERVER_IP with your actual server IP
+   ```
+
+2. **Set environment variables**
+   ```bash
+   export GITHUB_REPOSITORY_OWNER=your-username
+   export GITHUB_SHA=latest  # or specific commit SHA
+   ```
+
+3. **Deploy to production**
+   ```bash
+   ansible-playbook -i infra/inventory.ini infra/playbook.yml
+   ```
+
+### What Gets Deployed
+
+- **Docker & Docker Compose**: Installed and configured
+- **Application**: Latest GHCR image with specified SHA
+- **Qdrant**: Vector database with persistent storage
+- **Caddy**: Reverse proxy with automatic HTTPS
+- **Port 80**: Exposed for HTTP/HTTPS traffic
+
+### Post-Deployment
+
+- Application available at `http://YOUR_SERVER_IP`
+- Health check: `curl http://YOUR_SERVER_IP/healthz`
+- Container logs: `docker logs saathy-api`
+
+### Customization
+
+- **Domain**: Update `infra/roles/compose/templates/Caddyfile.j2`
+- **Environment**: Modify `infra/roles/compose/templates/env.j2`
+- **Ports**: Change in `infra/roles/compose/templates/docker-compose.yml.j2`
+
 ## Project Structure
 
 ```
@@ -151,4 +198,11 @@ src/saathy/
 │   └── repository.py
 ├── scheduler.py    # APScheduler init
 └── main.py         # Gunicorn/Uvicorn entrypoint
+
+infra/
+├── inventory.ini   # Ansible inventory
+├── playbook.yml    # Deployment playbook
+└── roles/
+    ├── docker/     # Docker installation
+    └── compose/    # Application deployment
 ```

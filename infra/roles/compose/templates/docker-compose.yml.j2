@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  api:
+    image: ghcr.io/{{ github_owner }}/saathy-oss:{{ lookup('env','GITHUB_SHA') }}
+    container_name: saathy-api
+    restart: unless-stopped
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - DEBUG=false
+    depends_on:
+      - qdrant
+    networks:
+      - saathy-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    container_name: saathy-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdata:/qdrant/storage
+    networks:
+      - saathy-network
+    command: ["qdrant", "--host", "0.0.0.0"]
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: saathy-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    networks:
+      - saathy-network
+
+volumes:
+  qdata:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+networks:
+  saathy-network:
+    driver: bridge 
