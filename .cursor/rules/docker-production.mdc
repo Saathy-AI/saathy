@@ -1,0 +1,16 @@
+---
+description: Production Docker Compose and deployment best practices
+globs: docker-compose.prod.yml, deploy.sh, nginx/*, scripts/*
+alwaysApply: true
+---
+
+# Docker Production Rules
+
+* All services must have health checks defined
+* Use restart policies: `restart: unless-stopped`
+* Never expose internal ports to host except through nginx
+* Use named volumes for persistent data
+* Include proper logging configuration
+* Environment variables must be documented in .env.example
+* Security headers must be configured in nginx
+* All scripts must have proper error handling with `set -e`

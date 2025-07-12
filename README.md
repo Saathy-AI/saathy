@@ -141,52 +141,98 @@ Once the application is running, visit:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## Deploy to VPS
+## Quick Deploy to VPS
 
 ### Prerequisites
 
-- Ubuntu 20.04+ server
+- Ubuntu 20.04+ VPS
 - SSH access with sudo privileges
 - Domain name (optional, for HTTPS)
 
-### Setup
+### 3-Step Deployment
 
-1. **Update inventory**
+1. **Initial VPS Setup**
    ```bash
-   # Edit infra/inventory.ini
-   # Replace YOUR_SERVER_IP with your actual server IP
+   # Follow the complete setup guide
+   # See: docs/vps-setup.md
    ```
 
-2. **Set environment variables**
+2. **Configure Environment**
    ```bash
-   export GITHUB_REPOSITORY_OWNER=your-username
-   export GITHUB_SHA=latest  # or specific commit SHA
+   cp .env.example .env
+   nano .env  # Set your API keys and domain
    ```
 
-3. **Deploy to production**
+3. **Deploy**
    ```bash
-   ansible-playbook -i infra/inventory.ini infra/playbook.yml
+   ./deploy.sh --init  # First time setup
+   ./deploy.sh         # Regular deployments
    ```
 
 ### What Gets Deployed
 
-- **Docker & Docker Compose**: Installed and configured
-- **Application**: Latest GHCR image with specified SHA
+- **FastAPI Application**: Running with Gunicorn (4 workers)
 - **Qdrant**: Vector database with persistent storage
-- **Caddy**: Reverse proxy with automatic HTTPS
-- **Port 80**: Exposed for HTTP/HTTPS traffic
+- **Nginx**: Reverse proxy with SSL/TLS termination
+- **Security**: Rate limiting, security headers, non-root containers
 
 ### Post-Deployment
 
-- Application available at `http://YOUR_SERVER_IP`
-- Health check: `curl http://YOUR_SERVER_IP/healthz`
-- Container logs: `docker logs saathy-api`
+- Application available at `https://your-domain.com` (or `http://your-server-ip`)
+- Health check: `curl https://your-domain.com/healthz`
+- Container logs: `docker-compose -f docker-compose.prod.yml logs -f`
 
-### Customization
+## Initial VPS Setup
 
-- **Domain**: Update `infra/roles/compose/templates/Caddyfile.j2`
-- **Environment**: Modify `infra/roles/compose/templates/env.j2`
-- **Ports**: Change in `infra/roles/compose/templates/docker-compose.yml.j2`
+For complete VPS setup instructions, see [docs/vps-setup.md](docs/vps-setup.md).
+
+Key steps:
+1. **System Updates**: `sudo apt update && sudo apt upgrade -y`
+2. **Security**: Configure SSH, firewall, fail2ban
+3. **Docker**: Install Docker and Docker Compose
+4. **SSL**: Set up Let's Encrypt certificates
+5. **Deploy**: Run `./deploy.sh --init`
+
+## Monitoring and Maintenance
+
+### Health Monitoring
+
+```bash
+# Check application health
+curl -f https://your-domain.com/healthz
+
+# Check container status
+docker-compose -f docker-compose.prod.yml ps
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+### Backup Management
+
+```bash
+# Create backup
+./scripts/backup.sh
+
+# List backups
+./scripts/backup.sh --help
+
+# Restore from backup
+./scripts/restore.sh qdrant-backup-YYYYMMDD-HHMMSS.tar.gz
+```
+
+### Updates and Rollbacks
+
+```bash
+# Regular deployment
+./deploy.sh
+
+# Test deployment (dry run)
+./deploy.sh --dry-run
+
+# Rollback if needed
+./deploy.sh --rollback
+```
 
 ## Project Structure
 
@@ -199,10 +245,14 @@ src/saathy/
 ├── scheduler.py    # APScheduler init
 └── main.py         # Gunicorn/Uvicorn entrypoint
 
-infra/
-├── inventory.ini   # Ansible inventory
-├── playbook.yml    # Deployment playbook
-└── roles/
-    ├── docker/     # Docker installation
-    └── compose/    # Application deployment
+docker-compose.prod.yml  # Production services
+deploy.sh               # Deployment script
+nginx/                  # Nginx configuration
+├── nginx.conf
+└── ssl/               # SSL certificates
+scripts/               # Maintenance scripts
+├── backup.sh
+└── restore.sh
+docs/                  # Documentation
+└── vps-setup.md      # Complete VPS setup guide
 ```
