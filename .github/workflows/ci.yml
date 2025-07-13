@@ -1,4 +1,4 @@
-name: CI
+name: CI Pipeline
 
 on:
   push:
@@ -8,95 +8,69 @@ on:
 
 jobs:
   test:
+    name: Run Tests and Linters
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+          poetry config virtualenvs.create false
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Run linters
+        run: poetry run ruff check .
+
+      - name: Run unit tests
+        run: poetry run pytest
+
+  integration-test:
+    name: Build and Smoke Test
+    runs-on: ubuntu-latest
+    needs: test
     strategy:
       matrix:
-        python-version: ["3.11"]
+        config:
+          - { name: "Development", compose_file: "docker-compose.dev.yml", env: "dev", port: 8000, base_url: "http://localhost:8000" }
+          - { name: "Production", compose_file: "docker-compose.prod.yml", env: "prod", port: 80, base_url: "http://localhost" }
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Build and start services
+        run: docker-compose -f ${{ matrix.config.compose_file }} up -d --build
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: latest
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for API to be ready on port ${{ matrix.config.port }}..."
+          max_wait=120
+          current_wait=0
+          while ! nc -z localhost ${{ matrix.config.port }}; do
+            if [ $current_wait -ge $max_wait ]; then
+              echo "Error: Timeout waiting for API to be ready."
+              docker-compose -f ${{ matrix.config.compose_file }} logs
+              exit 1
+            fi
+            sleep 5
+            current_wait=$((current_wait + 5))
+          done
+          echo "API is ready."
 
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install test dependencies
+        run: pip install requests colorama
 
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction
-
-    - name: Install pre-commit
-      run: poetry run pip install pre-commit
-
-    - name: Run pre-commit on all files
-      run: poetry run pre-commit run --all-files
-
-    - name: Run Ruff linting
-      run: poetry run ruff check .
-
-    - name: Run Ruff formatting check
-      run: poetry run ruff format --check .
-
-    - name: Run tests with coverage
-      run: poetry run pytest --cov=src/saathy --cov-report=xml
-      # --cov-fail-under=80  # Temporarily disabled for development
-
-
-
-  image:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ghcr.io/${{ github.repository_owner }}/saathy-oss
-        tags: |
-          type=sha,prefix={{branch}}-
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Run smoke test
+        run: |
+          python scripts/smoke_test.py --base-url ${{ matrix.config.base_url }}
+        env:
+          ENV_FOR_TEST: ${{ matrix.config.env }}
