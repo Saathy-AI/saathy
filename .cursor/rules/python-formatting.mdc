@@ -1,5 +1,0 @@
----
-description: Write concise, typed Python 3.11, follow ruff/black style, never leak secrets
-globs: src/**/*.py, tests/**/*.py
-alwaysApply: true
----
