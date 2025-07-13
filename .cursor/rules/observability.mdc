@@ -1,0 +1,17 @@
+---
+description: OpenTelemetry and monitoring patterns
+globs: src/saathy/observability.py, src/saathy/telemetry.py
+alwaysApply: true
+---
+
+# Observability Standards
+
+* Use OpenTelemetry for distributed tracing
+* Instrument all HTTP endpoints automatically
+* Add custom spans for business logic with `@tracer.trace`
+* Use structured logging with `structlog`
+* Exclude health check endpoints from tracing
+* Add request ID correlation across logs and traces
+* Use consistent span naming: `service.operation`
+* Tag spans with relevant business context
+* Implement graceful fallbacks when telemetry endpoints are unavailable
