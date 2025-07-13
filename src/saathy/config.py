@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     )
 
     # Observability settings
+    service_name: str = Field(
+        default="saathy", description="Service name for telemetry"
+    )
+    jaeger_agent_host: str = Field(
+        default="localhost", description="Jaeger agent host for Thrift exporter"
+    )
+    jaeger_agent_port: int = Field(
+        default=6831, description="Jaeger agent port for Thrift exporter"
+    )
     otlp_endpoint: Optional[HttpUrl] = Field(
         default=None, description="OpenTelemetry Protocol endpoint for tracing"
     )

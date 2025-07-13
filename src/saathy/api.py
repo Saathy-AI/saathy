@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI
 
 from saathy import __version__
 from saathy.config import Settings, get_settings
+from saathy.telemetry import configure_logging, configure_tracing
 
 # In-memory dictionary to hold settings during the application's lifespan.
 # This is a simple approach; for more complex scenarios, consider using a more robust solution.
@@ -16,7 +17,10 @@ app_settings: dict[str, Settings] = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Load the settings before the app starts and clear them when it's done."""
-    app_settings["instance"] = get_settings()
+    settings = get_settings()
+    app_settings["instance"] = settings
+    configure_logging(settings=settings)
+    configure_tracing(settings=settings, app=app)
     yield
     app_settings.clear()
 
