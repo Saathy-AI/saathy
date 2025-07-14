@@ -21,7 +21,7 @@ app_state: dict[str, Union[Settings, VectorRepository, None]] = {}
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Load the settings before the app starts and clear them when it's done."""
     settings = get_settings()
-    
+
     # Initialize vector_repo as None - will be created lazily when needed
     app_state["settings"] = settings
     app_state["vector_repo"] = None
@@ -49,7 +49,7 @@ def get_vector_repo() -> VectorRepository:
             api_key=settings.qdrant_api_key_str,
         )
         app_state["vector_repo"] = VectorRepository(client=qdrant_client)
-    
+
     return app_state["vector_repo"]
 
 
