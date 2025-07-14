@@ -1,4 +1,5 @@
 """Qdrant vector database repository layer."""
+
 from opentelemetry import trace
 from qdrant_client import QdrantClient
 

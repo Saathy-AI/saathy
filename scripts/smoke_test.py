@@ -80,17 +80,17 @@ def create_session_with_retries() -> requests.Session:
 
 def check_response_status(response: requests.Response) -> None:
     """Check if the response status is OK."""
-    assert response.status_code == HTTPStatus.OK, (
-        f"Expected status code {HTTPStatus.OK}, but got {response.status_code}."
-    )
+    assert (
+        response.status_code == HTTPStatus.OK
+    ), f"Expected status code {HTTPStatus.OK}, but got {response.status_code}."
     print_success("✓ Status code is OK (200)")
 
 
 def check_response_time(response_time: float, max_response_time: float) -> None:
     """Check if the response time is within the allowed limit."""
-    assert response_time <= max_response_time, (
-        f"Response time {response_time:.4f}s exceeds the limit of {max_response_time}s."
-    )
+    assert (
+        response_time <= max_response_time
+    ), f"Response time {response_time:.4f}s exceeds the limit of {max_response_time}s."
     print_success(f"✓ Response time is {response_time:.4f}s (within limit)")
 
 
@@ -98,19 +98,19 @@ def check_health_payload(response: requests.Response) -> None:
     """Check the health check JSON payload."""
     try:
         payload = response.json()
-    except json.JSONDecodeError:
-        raise AssertionError("Response is not valid JSON.")
+    except json.JSONDecodeError as e:
+        raise AssertionError("Response is not valid JSON.") from e
 
-    assert payload.get("status") == "healthy", (
-        f"Expected status 'healthy', but got '{payload.get('status')}'."
-    )
+    assert (
+        payload.get("status") == "healthy"
+    ), f"Expected status 'healthy', but got '{payload.get('status')}'."
     print_success("✓ API status is healthy")
 
     dependencies = payload.get("dependencies", {})
     qdrant_status = dependencies.get("qdrant")
-    assert qdrant_status == "healthy", (
-        f"Expected Qdrant status 'healthy', but got '{qdrant_status}'."
-    )
+    assert (
+        qdrant_status == "healthy"
+    ), f"Expected Qdrant status 'healthy', but got '{qdrant_status}'."
     print_success("✓ Qdrant dependency is healthy")
 
 
@@ -130,4 +130,4 @@ def print_error(message: str) -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

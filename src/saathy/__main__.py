@@ -83,9 +83,7 @@ def run_prod() -> None:
 
 def main() -> None:
     """Parse CLI arguments and run the application in the specified mode."""
-    parser = argparse.ArgumentParser(
-        description="Run the Saathy FastAPI application."
-    )
+    parser = argparse.ArgumentParser(description="Run the Saathy FastAPI application.")
     parser.add_argument(
         "--mode",
         type=str,
@@ -102,4 +100,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

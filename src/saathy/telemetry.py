@@ -35,8 +35,7 @@ def configure_logging(settings: Settings) -> None:
         return
 
     LoggingInstrumentor().instrument(
-        tracer_provider=trace.get_tracer_provider(),
-        set_logging_format=True
+        tracer_provider=trace.get_tracer_provider(), set_logging_format=True
     )
 
     log_level = settings.log_level.upper()
@@ -73,7 +72,11 @@ def configure_logging(settings: Settings) -> None:
         "formatters": {
             "default": {
                 "()": structlog.stdlib.ProcessorFormatter,
-                "processor": structlog.dev.ConsoleRenderer() if not settings.is_production else structlog.processors.JSONRenderer(),
+                "processor": (
+                    structlog.dev.ConsoleRenderer()
+                    if not settings.is_production
+                    else structlog.processors.JSONRenderer()
+                ),
                 "foreign_pre_chain": shared_processors,
             },
         },
@@ -108,9 +111,7 @@ def configure_tracing(settings: Settings, app) -> None:
 
     # Determine sampler based on environment
     sampler = (
-        TraceIdRatioBased(1.0)
-        if settings.is_development
-        else TraceIdRatioBased(0.1)
+        TraceIdRatioBased(1.0) if settings.is_development else TraceIdRatioBased(0.1)
     )
 
     provider = TracerProvider(resource=resource, sampler=sampler)
@@ -149,4 +150,4 @@ def configure_tracing(settings: Settings, app) -> None:
     logger.info(
         "Successfully configured OpenTelemetry tracing for service: %s",
         settings.service_name,
-    ) 
+    )
