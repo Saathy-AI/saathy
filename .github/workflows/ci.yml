@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build and start services
-        run: docker-compose -f ${{ matrix.config.compose_file }} up -d --build
+        run: docker compose -f ${{ matrix.config.compose_file }} up -d --build
 
       - name: Wait for services to be healthy
         run: |
@@ -58,7 +58,7 @@ jobs:
           while ! nc -z localhost ${{ matrix.config.port }}; do
             if [ $current_wait -ge $max_wait ]; then
               echo "Error: Timeout waiting for API to be ready."
-              docker-compose -f ${{ matrix.config.compose_file }} logs
+              docker compose -f ${{ matrix.config.compose_file }} logs
               exit 1
             fi
             sleep 5
