@@ -8,8 +8,7 @@ services:
       - ENVIRONMENT=production
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
-      qdrant:
-        condition: service_healthy
+      - qdrant
     volumes:
       - api_logs:/app/logs
     restart: unless-stopped
@@ -35,12 +34,6 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
     deploy:
       resources:
         limits:
@@ -59,8 +52,7 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
     depends_on:
-      saathy-api:
-        condition: service_healthy
+      - saathy-api
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/healthz"]
