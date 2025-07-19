@@ -47,6 +47,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Generate SSL certificates for production
+        if: matrix.config.env == 'prod'
+        run: |
+          chmod +x scripts/generate-ssl-certs.sh
+          ./scripts/generate-ssl-certs.sh
+
       - name: Build and start services
         run: docker compose -f ${{ matrix.config.compose_file }} up -d --build
 
