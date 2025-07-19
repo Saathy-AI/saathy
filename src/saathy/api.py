@@ -59,18 +59,29 @@ async def health_check(
 ) -> dict[str, str | dict[str, str]]:
     """Health check endpoint."""
     try:
+        # First check if we can connect to Qdrant
         qdrant_healthy = await vector_repo.health_check()
         if qdrant_healthy:
             return {"status": "healthy", "dependencies": {"qdrant": "healthy"}}
-        return {
-            "status": "unhealthy",
-            "dependencies": {"qdrant": "unhealthy"},
-        }
-    except Exception:
+        else:
+            return {
+                "status": "unhealthy",
+                "dependencies": {"qdrant": "unhealthy"},
+            }
+    except Exception as e:
+        # Log the exception for debugging but don't expose it in response
+        import logging
+        logging.warning(f"Health check failed: {e}")
         return {
             "status": "unhealthy",
             "dependencies": {"qdrant": "unavailable"},
         }
+
+
+@app.get("/readyz")
+async def readiness_check() -> dict[str, str]:
+    """Readiness check endpoint - returns OK if the service is ready to accept requests."""
+    return {"status": "ready"}
 
 
 @app.get("/config")

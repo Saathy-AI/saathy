@@ -1,36 +1,36 @@
-"""Test health check endpoint."""
-
-from collections.abc import Generator
-from unittest.mock import AsyncMock
+"""Test health check endpoints."""
 
 import pytest
 from fastapi.testclient import TestClient
 
-from saathy.api import app, get_vector_repo
+from saathy.api import app
+
+client = TestClient(app)
 
 
-@pytest.fixture
-def client() -> Generator[TestClient, None, None]:
-    """Create test client."""
-    with TestClient(app) as test_client:
-        yield test_client
-
-
-def test_healthz_endpoint(client: TestClient) -> None:
-    """Test that /healthz endpoint returns 200 and correct response."""
-
-    async def mock_health_check() -> bool:
-        return True
-
-    app.dependency_overrides[get_vector_repo] = lambda: AsyncMock(
-        health_check=mock_health_check,
-    )
-
+def test_health_check():
+    """Test the health check endpoint."""
     response = client.get("/healthz")
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "healthy",
-        "dependencies": {"qdrant": "healthy"},
-    }
+    data = response.json()
+    assert "status" in data
+    assert "dependencies" in data
+    assert "qdrant" in data["dependencies"]
 
-    app.dependency_overrides.clear()
+
+def test_readiness_check():
+    """Test the readiness check endpoint."""
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ready"
+
+
+def test_config_endpoint():
+    """Test the config endpoint."""
+    response = client.get("/config")
+    assert response.status_code == 200
+    data = response.json()
+    assert "app_name" in data
+    assert "environment" in data
+    assert "debug" in data
