@@ -1,11 +1,11 @@
 """Test health check endpoints."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 
-from saathy.api import app
+from saathy.api import app, get_vector_repo
 
 client = TestClient(app)
 
@@ -20,7 +20,10 @@ def mock_vector_repo():
 
 def test_health_check(mock_vector_repo):
     """Test the health check endpoint."""
-    with patch('saathy.api.get_vector_repo', return_value=mock_vector_repo):
+    # Override the dependency
+    app.dependency_overrides[get_vector_repo] = lambda: mock_vector_repo
+
+    try:
         response = client.get("/healthz")
         assert response.status_code == 200
         data = response.json()
@@ -29,17 +32,27 @@ def test_health_check(mock_vector_repo):
         assert "qdrant" in data["dependencies"]
         assert data["status"] == "healthy"
         assert data["dependencies"]["qdrant"] == "healthy"
+    finally:
+        # Clean up the override
+        app.dependency_overrides.clear()
 
 
 def test_health_check_qdrant_unhealthy(mock_vector_repo):
     """Test the health check endpoint when Qdrant is unhealthy."""
     mock_vector_repo.health_check.return_value = False
-    with patch('saathy.api.get_vector_repo', return_value=mock_vector_repo):
+
+    # Override the dependency
+    app.dependency_overrides[get_vector_repo] = lambda: mock_vector_repo
+
+    try:
         response = client.get("/healthz")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "unhealthy"
         assert data["dependencies"]["qdrant"] == "unhealthy"
+    finally:
+        # Clean up the override
+        app.dependency_overrides.clear()
 
 
 def test_readiness_check():
