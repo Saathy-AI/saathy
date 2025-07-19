@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build and start services
-        run: docker-compose -f ${{ matrix.config.compose_file }} up -d --build
+        run: docker compose -f ${{ matrix.config.compose_file }} up -d --build
 
       - name: Wait for Qdrant to be ready
         run: |
@@ -58,7 +58,7 @@ jobs:
           while ! nc -z localhost 6333; do
             if [ $current_wait -ge $max_wait ]; then
               echo "Error: Timeout waiting for Qdrant to be ready."
-              docker-compose -f ${{ matrix.config.compose_file }} logs qdrant
+              docker compose -f ${{ matrix.config.compose_file }} logs qdrant
               exit 1
             fi
             sleep 2
@@ -74,7 +74,7 @@ jobs:
           while ! nc -z localhost ${{ matrix.config.port }}; do
             if [ $current_wait -ge $max_wait ]; then
               echo "Error: Timeout waiting for API to be ready."
-              docker-compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+              docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
               exit 1
             fi
             sleep 5
@@ -91,7 +91,7 @@ jobs:
             if [ $current_wait -ge $max_wait ]; then
               echo "Error: Timeout waiting for API readiness endpoint."
               curl -f ${{ matrix.config.base_url }}/readyz || echo "Readiness check failed"
-              docker-compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+              docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
               exit 1
             fi
             
@@ -115,7 +115,7 @@ jobs:
             if [ $current_wait -ge $max_wait ]; then
               echo "Error: Timeout waiting for health endpoint to be healthy."
               curl -f ${{ matrix.config.base_url }}/healthz || echo "Health check failed"
-              docker-compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+              docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
               exit 1
             fi
             
@@ -143,6 +143,6 @@ jobs:
         if: failure()
         run: |
           echo "=== API Logs ==="
-          docker-compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+          docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
           echo "=== Qdrant Logs ==="
-          docker-compose -f ${{ matrix.config.compose_file }} logs qdrant
+          docker compose -f ${{ matrix.config.compose_file }} logs qdrant
