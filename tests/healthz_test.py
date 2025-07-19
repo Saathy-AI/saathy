@@ -1,5 +1,8 @@
 """Test health check endpoints."""
 
+from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from saathy.api import app
@@ -7,14 +10,36 @@ from saathy.api import app
 client = TestClient(app)
 
 
-def test_health_check():
+@pytest.fixture
+def mock_vector_repo():
+    """Mock vector repository for testing."""
+    mock_repo = AsyncMock()
+    mock_repo.health_check.return_value = True
+    return mock_repo
+
+
+def test_health_check(mock_vector_repo):
     """Test the health check endpoint."""
-    response = client.get("/healthz")
-    assert response.status_code == 200
-    data = response.json()
-    assert "status" in data
-    assert "dependencies" in data
-    assert "qdrant" in data["dependencies"]
+    with patch('saathy.api.get_vector_repo', return_value=mock_vector_repo):
+        response = client.get("/healthz")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert "dependencies" in data
+        assert "qdrant" in data["dependencies"]
+        assert data["status"] == "healthy"
+        assert data["dependencies"]["qdrant"] == "healthy"
+
+
+def test_health_check_qdrant_unhealthy(mock_vector_repo):
+    """Test the health check endpoint when Qdrant is unhealthy."""
+    mock_vector_repo.health_check.return_value = False
+    with patch('saathy.api.get_vector_repo', return_value=mock_vector_repo):
+        response = client.get("/healthz")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "unhealthy"
+        assert data["dependencies"]["qdrant"] == "unhealthy"
 
 
 def test_readiness_check():

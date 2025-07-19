@@ -43,7 +43,12 @@ app = FastAPI(
 def get_vector_repo() -> VectorRepository:
     """Get the vector repository from application state, creating it if needed."""
     if app_state.get("vector_repo") is None:
-        settings = app_state["settings"]
+        # If settings are not in app_state (e.g., in test environment), get them directly
+        if "settings" not in app_state:
+            settings = get_settings()
+        else:
+            settings = app_state["settings"]
+
         qdrant_client = QdrantClient(
             url=str(settings.qdrant_url),
             api_key=settings.qdrant_api_key_str,
