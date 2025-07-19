@@ -21,7 +21,7 @@ def main() -> None:
     print_info(f"🚀 Starting smoke test for {args.base_url}...")
 
     session = create_session_with_retries()
-    
+
     # First test the readiness endpoint
     readiness_url = f"{args.base_url}/readyz"
     try:

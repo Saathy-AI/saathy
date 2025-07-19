@@ -1,6 +1,5 @@
 """Test health check endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from saathy.api import app
