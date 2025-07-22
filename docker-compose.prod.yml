@@ -17,7 +17,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: saathy:latest # In a real prod env, you would pull a tagged image
     container_name: saathy-api
     restart: unless-stopped
     depends_on:
@@ -32,9 +31,6 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY_FILE=/run/secrets/qdrant_api_key
       - OPENAI_API_KEY_FILE=/run/secrets/openai_api_key
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - OTEL_SERVICE_NAME=saathy-api
-      - ENABLE_TRACING=true
     secrets:
       - qdrant_api_key
       - openai_api_key
@@ -43,6 +39,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     logging:
       driver: "json-file"
       options:
@@ -60,10 +57,11 @@ services:
     volumes:
       - qdata:/qdrant/storage
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     logging:
       driver: "json-file"
       options:
@@ -154,7 +152,6 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
     networks:
       - saathy-net
     volumes:
