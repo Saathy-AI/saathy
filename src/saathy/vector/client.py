@@ -30,6 +30,7 @@ class QdrantClientWrapper:
         collection_name: str = "documents",
         vector_size: int = 384,
         distance: str = "Cosine",
+        api_key: Optional[str] = None,
     ) -> None:
         """Initialize Qdrant client wrapper.
 
@@ -51,6 +52,7 @@ class QdrantClientWrapper:
         self.collection_name = collection_name
         self.vector_size = vector_size
         self.distance = distance
+        self.api_key = api_key
 
         # Initialize client
         self._client: Optional[QdrantClient] = None
@@ -68,11 +70,15 @@ class QdrantClientWrapper:
         """Get or create Qdrant client with connection pooling."""
         if self._client is None:
             try:
-                self._client = QdrantClient(
-                    host=self.host,
-                    port=self.port,
-                    timeout=self.timeout,
-                )
+                client_kwargs = {
+                    "host": self.host,
+                    "port": self.port,
+                    "timeout": self.timeout,
+                }
+                if self.api_key:
+                    client_kwargs["api_key"] = self.api_key
+
+                self._client = QdrantClient(**client_kwargs)
                 logger.debug("Created new Qdrant client connection")
             except Exception as e:
                 logger.error("Failed to create Qdrant client", error=str(e))
