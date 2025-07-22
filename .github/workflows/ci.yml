@@ -100,14 +100,14 @@ jobs:
               docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
               exit 1
             fi
-            
+
             # Try to get readiness status
             response=$(curl -s ${{ matrix.config.base_url }}/readyz 2>/dev/null || echo "")
             if echo "$response" | grep -q '"status":"ready"'; then
               echo "API readiness endpoint is ready."
               break
             fi
-            
+
             sleep 5
             current_wait=$((current_wait + 5))
           done
@@ -124,14 +124,14 @@ jobs:
               docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
               exit 1
             fi
-            
+
             # Try to get health status
             response=$(curl -s ${{ matrix.config.base_url }}/healthz 2>/dev/null || echo "")
             if echo "$response" | grep -q '"status":"healthy"'; then
               echo "Health endpoint is healthy."
               break
             fi
-            
+
             sleep 5
             current_wait=$((current_wait + 5))
           done
