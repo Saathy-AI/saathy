@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     qdrant_api_key: Optional[SecretStr] = Field(
         default=None, description="Qdrant API key for authentication"
     )
+    qdrant_collection_name: str = Field(
+        default="documents", description="Qdrant collection name"
+    )
+    qdrant_vector_size: int = Field(
+        default=384, description="Vector dimensions for embeddings"
+    )
 
     # External API settings
     openai_api_key: Optional[SecretStr] = Field(

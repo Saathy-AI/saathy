@@ -25,4 +25,4 @@ python -c "from saathy.api import app; print('API imported successfully')" || {
 }
 
 echo "Starting uvicorn server..."
-exec uvicorn saathy.api:app --host 0.0.0.0 --port 8000 
+exec uvicorn saathy.api:app --host 0.0.0.0 --port 8000

@@ -10,4 +10,4 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -out nginx/ssl/cert.pem \
     -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 
-echo "SSL certificates generated successfully!" 
+echo "SSL certificates generated successfully!"
