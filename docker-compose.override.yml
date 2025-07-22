@@ -24,4 +24,4 @@ services:
   nginx:
     ports:
       - "8080:80" # Use a different port to avoid conflicts
-      - "8443:443" 
+      - "8443:443"

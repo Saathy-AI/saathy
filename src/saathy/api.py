@@ -76,6 +76,7 @@ async def health_check(
     except Exception as e:
         # Log the exception for debugging but don't expose it in response
         import logging
+
         logging.warning(f"Health check failed: {e}")
         return {
             "status": "unhealthy",

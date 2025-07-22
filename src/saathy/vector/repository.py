@@ -24,5 +24,6 @@ class VectorRepository:
         except Exception as e:
             # Log the specific error for debugging
             import logging
+
             logging.warning(f"Qdrant health check failed: {e}")
             return False
