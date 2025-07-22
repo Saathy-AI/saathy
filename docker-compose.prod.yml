@@ -1,5 +1,3 @@
-version: '3.8'
-
 secrets:
   qdrant_api_key:
     file: ./secrets/qdrant_api_key
