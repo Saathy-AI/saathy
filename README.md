@@ -1,258 +1,265 @@
 # Saathy
 
-A FastAPI-based application with vector search capabilities using Qdrant and sentence transformers.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-green.svg)](https://fastapi.tiangolo.com/)
 
-## Features
+A FastAPI-based application foundation for building a personal AI copilot, currently in early development with production-ready infrastructure.
 
-- FastAPI web framework
-- Vector search with Qdrant
-- Sentence transformers for embeddings
-- Background job scheduling with APScheduler
-- Comprehensive testing with pytest
-- Code quality with Ruff and Black
+## 🚀 Current Capabilities
 
-## Local Development
+**Implemented Features:**
+- **FastAPI Web Framework**: Production-ready API with health monitoring endpoints
+- **Vector Database Integration**: Qdrant client setup with health check connectivity
+- **Observability**: OpenTelemetry tracing and structured logging with Jaeger integration
+- **Production Deployment**: Complete Docker Compose setup with Nginx, monitoring stack
+- **Development Infrastructure**: Poetry dependency management, comprehensive testing, code quality tools
+- **Configuration Management**: Pydantic Settings with environment variable support
+
+**API Endpoints:**
+- `GET /healthz` - Health check with Qdrant connectivity verification
+- `GET /readyz` - Readiness check for service availability
+- `GET /config` - Non-sensitive configuration display
+
+## 🏗️ Architecture
+
+```
+src/saathy/
+├── __init__.py          # Package initialization
+├── api.py              # FastAPI application with health endpoints
+├── config.py           # Pydantic Settings configuration
+├── main.py             # Server entrypoint
+├── scheduler.py        # APScheduler setup (basic)
+├── telemetry.py        # OpenTelemetry tracing configuration
+└── vector/
+    └── repository.py   # Qdrant client wrapper with health check
+```
+
+**Production Stack:**
+- **Application**: FastAPI with Uvicorn/Gunicorn
+- **Vector Database**: Qdrant v1.9.2
+- **Reverse Proxy**: Nginx with SSL termination
+- **Monitoring**: Prometheus + Grafana + OpenTelemetry Collector
+- **Containerization**: Docker with multi-stage builds
+
+## 🛠️ Installation
 
 ### Prerequisites
-
 - Python 3.9+
-- Poetry (for dependency management)
+- Docker and Docker Compose
+- Poetry (for development)
 
-### 3-Step Local Run Guide
+### Development Setup
 
-#### Option 1: Poetry (Development)
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd saathy
+   ```
 
-1. **Install dependencies**
+2. **Install dependencies with Poetry:**
    ```bash
    poetry install
    ```
 
-2. **Run the application**
+3. **Set up environment variables:**
    ```bash
-   poetry run python -m saathy.main
+   cp docs/env.example .env
+   # Edit .env with your configuration
    ```
 
-3. **Test the health endpoint**
+4. **Run with Docker Compose (development):**
    ```bash
-   curl http://localhost:8000/healthz
+   docker-compose -f docker-compose.dev.yml up -d
    ```
 
-#### Option 2: Docker (Recommended)
-
-1. **Start services with Docker Compose**
+5. **Or run locally with Poetry:**
    ```bash
-   docker-compose -f docker-compose.dev.yml up --build
+   poetry run uvicorn saathy.api:app --reload --host 0.0.0.0 --port 8000
    ```
 
-2. **Test the health endpoint**
+### Production Deployment
+
+1. **Set up secrets:**
    ```bash
-   curl http://localhost:8000/healthz
+   mkdir -p secrets
+   echo "your-qdrant-api-key" > secrets/qdrant_api_key
+   echo "your-openai-api-key" > secrets/openai_api_key
+   echo "your-grafana-password" > secrets/grafana_admin_password
    ```
 
-3. **Access Qdrant dashboard**
+2. **Deploy with production compose:**
    ```bash
-   open http://localhost:6333/dashboard
+   docker-compose -f docker-compose.prod.yml up -d
    ```
 
-The application will be available at `http://localhost:8000`
+3. **Or use the deployment script:**
+   ```bash
+   chmod +x deploy.sh
+   ./deploy.sh --init  # First time setup
+   ./deploy.sh         # Regular deployment
+   ```
 
-## Development
+## 🧪 Development
 
 ### Running Tests
-
 ```bash
+# Run all tests
 poetry run pytest
+
+# Run with coverage
+poetry run pytest --cov=saathy
+
+# Run specific test file
+poetry run pytest tests/healthz_test.py
 ```
 
-### Code Formatting
-
+### Code Quality
 ```bash
-poetry run ruff check .
+# Format code
 poetry run ruff format .
+
+# Lint code
+poetry run ruff check .
+
+# Type checking
+poetry run mypy src/
 ```
 
-### Automatic Code Quality
-
-This project uses pre-commit hooks to ensure code quality automatically. The hooks run on every commit and include:
-
-- **Ruff**: Linting and auto-fixing Python code
+### Pre-commit Hooks
+The project includes pre-commit hooks for automatic code formatting and linting:
+- **Ruff**: Fast Python linter and formatter
 - **Black**: Code formatting
-- **isort**: Import sorting (Black profile)
-- **Typos**: Spell checking and correction
-- **Pre-commit hooks**: Various file checks (YAML, JSON, TOML, etc.)
+- **isort**: Import sorting
 
-#### Setup
-
+### Docker Development
 ```bash
-# Install pre-commit hooks
-poetry run pre-commit install
-
-# Run manually on all files
-poetry run pre-commit run --all-files
-
-# Run on staged files only
-poetry run pre-commit run
-```
-
-#### What's Checked
-
-- ✅ Code formatting (Black)
-- ✅ Import sorting (isort)
-- ✅ Linting (Ruff)
-- ✅ Spell checking (Typos)
-- ✅ File format validation
-- ✅ Merge conflict detection
-- ✅ Large file detection
-- ✅ Debug statement detection
-
-### Docker
-
-#### Building the Image
-
-```bash
-docker build -t saathy .
-```
-
-#### Running with Docker Compose
-
-```bash
-# Start all services
-docker-compose -f docker-compose.dev.yml up
-
-# Start in background
+# Start development environment
 docker-compose -f docker-compose.dev.yml up -d
-
-# Stop services
-docker-compose -f docker-compose.dev.yml down
 
 # View logs
 docker-compose -f docker-compose.dev.yml logs -f api
+
+# Rebuild and restart
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
-#### Services
+## 🔧 Configuration
 
-- **API**: FastAPI application on port 8000
-- **Qdrant**: Vector database on port 6333 (gRPC) and 6334 (HTTP)
-- **Volume**: `qdata` for persistent Qdrant storage
+### Environment Variables
 
-### API Documentation
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_NAME` | Application name | `Saathy` |
+| `ENVIRONMENT` | Environment (dev/staging/prod) | `development` |
+| `DEBUG` | Enable debug mode | `false` |
+| `LOG_LEVEL` | Logging level | `INFO` |
+| `QDRANT_URL` | Qdrant vector database URL | `http://localhost:6333` |
+| `QDRANT_API_KEY` | Qdrant API key | `None` |
+| `OPENAI_API_KEY` | OpenAI API key | `None` |
+| `ENABLE_TRACING` | Enable OpenTelemetry tracing | `false` |
+| `HOST` | Server host address | `0.0.0.0` |
+| `PORT` | Server port | `8000` |
 
-Once the application is running, visit:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+### Production Configuration
 
-## Quick Deploy to VPS
+The production setup includes:
+- **Nginx**: Reverse proxy with SSL termination
+- **Prometheus**: Metrics collection
+- **Grafana**: Monitoring dashboards
+- **OpenTelemetry Collector**: Distributed tracing
+- **Health Checks**: Container health monitoring
+- **Logging**: Structured JSON logging with rotation
 
-### Prerequisites
+## 📊 Monitoring
 
-- Ubuntu 20.04+ VPS
-- SSH access with sudo privileges
-- Domain name (optional, for HTTPS)
+### Health Checks
+- **Application**: `GET /healthz` - Checks Qdrant connectivity
+- **Readiness**: `GET /readyz` - Service readiness status
+- **Configuration**: `GET /config` - Non-sensitive config display
 
-### 3-Step Deployment
+### Observability
+- **Tracing**: OpenTelemetry with Jaeger integration
+- **Logging**: Structured logging with correlation IDs
+- **Metrics**: Prometheus metrics collection
+- **Dashboards**: Grafana monitoring dashboards
 
-1. **Initial VPS Setup**
-   ```bash
-   # Follow the complete setup guide
-   # See: docs/vps-setup.md
-   ```
+## 🚧 Development Status
 
-2. **Configure Environment**
-   ```bash
-   cp .env.example .env
-   nano .env  # Set your API keys and domain
-   ```
+**Current State**: Early Development
+- ✅ Foundation infrastructure complete
+- ✅ Production deployment pipeline
+- ✅ Health monitoring and observability
+- ✅ Vector database connectivity
+- 🔄 Core AI features in development
+- 📋 Advanced features planned
 
-3. **Deploy**
-   ```bash
-   ./deploy.sh --init  # First time setup
-   ./deploy.sh         # Regular deployments
-   ```
+**What's Working:**
+- FastAPI application with health endpoints
+- Qdrant vector database connection
+- OpenTelemetry tracing and logging
+- Docker production deployment
+- Comprehensive testing framework
+- Code quality and formatting tools
 
-### What Gets Deployed
+**What's Not Yet Implemented:**
+- Vector embedding and search functionality
+- Git repository integration
+- Slack or other platform connectors
+- Meeting transcription capabilities
+- CLI tools and utilities
 
-- **FastAPI Application**: Running with Gunicorn (4 workers)
-- **Qdrant**: Vector database with persistent storage
-- **Nginx**: Reverse proxy with SSL/TLS termination
-- **Security**: Rate limiting, security headers, non-root containers
+## 🗺️ Development Roadmap
 
-### Post-Deployment
+### Phase 1: Foundation ✅
+- [x] FastAPI application structure
+- [x] Vector database integration
+- [x] Observability and monitoring
+- [x] Production deployment pipeline
 
-- Application available at `https://your-domain.com` (or `http://your-server-ip`)
-- Health check: `curl https://your-domain.com/healthz`
-- Container logs: `docker-compose -f docker-compose.prod.yml logs -f`
+### Phase 2: Core Features (In Progress)
+- [ ] Vector embedding and search
+- [ ] Document processing and chunking
+- [ ] Basic LLM integration
+- [ ] Repository connectors
 
-## Initial VPS Setup
+### Phase 3: Advanced Features (Planned)
+- [ ] Multi-modal content support
+- [ ] Advanced search algorithms
+- [ ] Real-time collaboration
+- [ ] Advanced analytics
 
-For complete VPS setup instructions, see [docs/vps-setup.md](docs/vps-setup.md).
+### Phase 4: Platform Integration (Future)
+- [ ] Slack integration
+- [ ] Git platform connectors
+- [ ] Notion integration
+- [ ] Meeting transcription
 
-Key steps:
-1. **System Updates**: `sudo apt update && sudo apt upgrade -y`
-2. **Security**: Configure SSH, firewall, fail2ban
-3. **Docker**: Install Docker and Docker Compose
-4. **SSL**: Set up Let's Encrypt certificates
-5. **Deploy**: Run `./deploy.sh --init`
+## 🤝 Contributing
 
-## Monitoring and Maintenance
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### Health Monitoring
+### Development Guidelines
+- Follow the existing code style (Ruff + Black)
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting
 
-```bash
-# Check application health
-curl -f https://your-domain.com/healthz
+## 📄 License
 
-# Check container status
-docker-compose -f docker-compose.prod.yml ps
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-# View logs
-docker-compose -f docker-compose.prod.yml logs -f
-```
+## 🆘 Support
 
-### Backup Management
+For questions, issues, or contributions:
+- Open an issue on GitHub
+- Check the documentation in the `docs/` directory
+- Review the test files for usage examples
 
-```bash
-# Create backup
-./scripts/backup.sh
+---
 
-# List backups
-./scripts/backup.sh --help
-
-# Restore from backup
-./scripts/restore.sh qdrant-backup-YYYYMMDD-HHMMSS.tar.gz
-```
-
-### Updates and Rollbacks
-
-```bash
-# Regular deployment
-./deploy.sh
-
-# Test deployment (dry run)
-./deploy.sh --dry-run
-
-# Rollback if needed
-./deploy.sh --rollback
-```
-
-## Project Structure
-
-```
-src/saathy/
-├── api.py          # FastAPI instance
-├── config.py       # Pydantic Settings singleton
-├── vector/         # Qdrant repository layer
-│   └── repository.py
-├── scheduler.py    # APScheduler init
-└── main.py         # Gunicorn/Uvicorn entrypoint
-
-docker-compose.prod.yml  # Production services
-deploy.sh               # Deployment script
-nginx/                  # Nginx configuration
-├── nginx.conf
-└── ssl/               # SSL certificates
-scripts/               # Maintenance scripts
-├── backup.sh
-└── restore.sh
-docs/                  # Documentation
-└── vps-setup.md      # Complete VPS setup guide
-```
+**Note**: This is an early-stage project. The foundation infrastructure is complete and production-ready, but core AI features are still in development.

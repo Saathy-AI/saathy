@@ -1,5 +1,6 @@
 """Application configuration using Pydantic Settings."""
 
+import os
 from typing import Optional
 
 from pydantic import Field, HttpUrl, SecretStr
@@ -81,14 +82,38 @@ class Settings(BaseSettings):
         """Check if running in production environment."""
         return self.environment.lower() == "production"
 
+    def _read_secret_from_file(self, env_var_name: str) -> Optional[str]:
+        """Read secret from file if *_FILE environment variable is set."""
+        file_env_var = f"{env_var_name}_FILE"
+        file_path = os.getenv(file_env_var)
+        if file_path and os.path.exists(file_path):
+            try:
+                with open(file_path) as f:
+                    return f.read().strip()
+            except Exception:
+                return None
+        return None
+
     @property
     def qdrant_api_key_str(self) -> Optional[str]:
         """Get Qdrant API key as string if available."""
+        # First try to read from file
+        file_secret = self._read_secret_from_file("QDRANT_API_KEY")
+        if file_secret:
+            return file_secret
+
+        # Fall back to environment variable
         return self.qdrant_api_key.get_secret_value() if self.qdrant_api_key else None
 
     @property
     def openai_api_key_str(self) -> Optional[str]:
         """Get OpenAI API key as string if available."""
+        # First try to read from file
+        file_secret = self._read_secret_from_file("OPENAI_API_KEY")
+        if file_secret:
+            return file_secret
+
+        # Fall back to environment variable
         return self.openai_api_key.get_secret_value() if self.openai_api_key else None
 
 
