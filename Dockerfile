@@ -38,6 +38,15 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy application code
 COPY src/ ./src/
 
+# Copy startup script
+COPY start.sh ./start.sh
+
+# Set Python path to include the src directory
+ENV PYTHONPATH=/app/src:$PYTHONPATH
+
+# Make startup script executable
+RUN chmod +x start.sh
+
 # Change ownership to app user
 RUN chown -R app:app /app
 
@@ -51,5 +60,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-# Run the application
-CMD ["python", "-m", "saathy", "--mode", "prod"]
+# Run the application using the startup script
+CMD ["./start.sh"]

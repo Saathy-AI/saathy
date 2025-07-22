@@ -21,10 +21,27 @@ def main() -> None:
     print_info(f"🚀 Starting smoke test for {args.base_url}...")
 
     session = create_session_with_retries()
+
+    # First test the readiness endpoint
+    readiness_url = f"{args.base_url}/readyz"
+    try:
+        print_info("Testing readiness endpoint...")
+        response = session.get(readiness_url, timeout=args.timeout)
+        if response.status_code == 200:
+            print_success("✓ Readiness endpoint is working")
+        else:
+            print_error(f"Readiness endpoint returned status {response.status_code}")
+            sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        print_error(f"Failed to connect to readiness endpoint: {e}")
+        sys.exit(1)
+
+    # Then test the health endpoint
     health_check_url = f"{args.base_url}/healthz"
     max_response_time = args.timeout
 
     try:
+        print_info("Testing health endpoint...")
         start_time = time.monotonic()
         response = session.get(health_check_url, timeout=args.timeout)
         end_time = time.monotonic()
@@ -38,7 +55,7 @@ def main() -> None:
         sys.exit(0)
 
     except requests.exceptions.RequestException as e:
-        print_error(f"Failed to connect to the server: {e}")
+        print_error(f"Failed to connect to the health endpoint: {e}")
         sys.exit(1)
     except AssertionError as e:
         print_error(f"Smoke test failed: {e}")

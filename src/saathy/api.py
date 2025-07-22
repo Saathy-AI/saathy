@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Union
 
 from fastapi import Depends, FastAPI
 from qdrant_client import QdrantClient
@@ -13,21 +14,17 @@ from saathy.vector.repository import VectorRepository
 
 # In-memory dictionary to hold settings during the application's lifespan.
 # This is a simple approach; for more complex scenarios, consider using a more robust solution.
-app_state: dict[str, Settings | VectorRepository] = {}
+app_state: dict[str, Union[Settings, VectorRepository, None]] = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Load the settings before the app starts and clear them when it's done."""
     settings = get_settings()
-    qdrant_client = QdrantClient(
-        url=str(settings.qdrant_url),
-        api_key=settings.qdrant_api_key_str,
-    )
-    vector_repo = VectorRepository(client=qdrant_client)
 
+    # Initialize vector_repo as None - will be created lazily when needed
     app_state["settings"] = settings
-    app_state["vector_repo"] = vector_repo
+    app_state["vector_repo"] = None
 
     configure_logging(settings=settings)
     configure_tracing(settings=settings, app=app)
@@ -44,7 +41,20 @@ app = FastAPI(
 
 
 def get_vector_repo() -> VectorRepository:
-    """Get the vector repository from application state."""
+    """Get the vector repository from application state, creating it if needed."""
+    if app_state.get("vector_repo") is None:
+        # If settings are not in app_state (e.g., in test environment), get them directly
+        if "settings" not in app_state:
+            settings = get_settings()
+        else:
+            settings = app_state["settings"]
+
+        qdrant_client = QdrantClient(
+            url=str(settings.qdrant_url),
+            api_key=settings.qdrant_api_key_str,
+        )
+        app_state["vector_repo"] = VectorRepository(client=qdrant_client)
+
     return app_state["vector_repo"]
 
 
@@ -53,13 +63,30 @@ async def health_check(
     vector_repo: VectorRepository = Depends(get_vector_repo),
 ) -> dict[str, str | dict[str, str]]:
     """Health check endpoint."""
-    qdrant_healthy = await vector_repo.health_check()
-    if qdrant_healthy:
-        return {"status": "healthy", "dependencies": {"qdrant": "healthy"}}
-    return {
-        "status": "unhealthy",
-        "dependencies": {"qdrant": "unhealthy"},
-    }
+    try:
+        # First check if we can connect to Qdrant
+        qdrant_healthy = await vector_repo.health_check()
+        if qdrant_healthy:
+            return {"status": "healthy", "dependencies": {"qdrant": "healthy"}}
+        else:
+            return {
+                "status": "unhealthy",
+                "dependencies": {"qdrant": "unhealthy"},
+            }
+    except Exception as e:
+        # Log the exception for debugging but don't expose it in response
+        import logging
+        logging.warning(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "dependencies": {"qdrant": "unavailable"},
+        }
+
+
+@app.get("/readyz")
+async def readiness_check() -> dict[str, str]:
+    """Readiness check endpoint - returns OK if the service is ready to accept requests."""
+    return {"status": "ready"}
 
 
 @app.get("/config")

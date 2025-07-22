@@ -18,7 +18,11 @@ class VectorRepository:
         """Check if the vector database is healthy."""
         try:
             # Simple health check - get collections info
+            # This will fail if Qdrant is not accessible
             self.client.get_collections()
             return True
-        except Exception:
+        except Exception as e:
+            # Log the specific error for debugging
+            import logging
+            logging.warning(f"Qdrant health check failed: {e}")
             return False

@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Install Poetry
         run: |
@@ -40,17 +40,39 @@ jobs:
     strategy:
       matrix:
         config:
-          - { name: "Development", compose_file: "docker-compose.dev.yml", env: "dev", port: 8000, base_url: "http://localhost:8000" }
-          - { name: "Production", compose_file: "docker-compose.prod.yml", env: "prod", port: 80, base_url: "http://localhost" }
+          - { name: "Development", compose_file: "docker-compose.dev.yml", env: "dev", port: 8000, base_url: "http://localhost:8000", service: "api" }
+          - { name: "Production", compose_file: "docker-compose.prod.yml", env: "prod", port: 80, base_url: "http://localhost", service: "nginx" }
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build and start services
-        run: docker-compose -f ${{ matrix.config.compose_file }} up -d --build
+      - name: Generate SSL certificates for production
+        if: matrix.config.env == 'prod'
+        run: |
+          chmod +x scripts/generate-ssl-certs.sh
+          ./scripts/generate-ssl-certs.sh
 
-      - name: Wait for services to be healthy
+      - name: Build and start services
+        run: docker compose -f ${{ matrix.config.compose_file }} up -d --build
+
+      - name: Wait for Qdrant to be ready
+        run: |
+          echo "Waiting for Qdrant to be ready on port 6333..."
+          max_wait=60
+          current_wait=0
+          while ! nc -z localhost 6333; do
+            if [ $current_wait -ge $max_wait ]; then
+              echo "Error: Timeout waiting for Qdrant to be ready."
+              docker compose -f ${{ matrix.config.compose_file }} logs qdrant
+              exit 1
+            fi
+            sleep 2
+            current_wait=$((current_wait + 2))
+          done
+          echo "Qdrant is ready."
+
+      - name: Wait for API to be ready
         run: |
           echo "Waiting for API to be ready on port ${{ matrix.config.port }}..."
           max_wait=120
@@ -58,7 +80,7 @@ jobs:
           while ! nc -z localhost ${{ matrix.config.port }}; do
             if [ $current_wait -ge $max_wait ]; then
               echo "Error: Timeout waiting for API to be ready."
-              docker-compose -f ${{ matrix.config.compose_file }} logs
+              docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
               exit 1
             fi
             sleep 5
@@ -66,11 +88,67 @@ jobs:
           done
           echo "API is ready."
 
+      - name: Wait for API readiness endpoint
+        run: |
+          echo "Waiting for API readiness endpoint..."
+          max_wait=60
+          current_wait=0
+          while true; do
+            if [ $current_wait -ge $max_wait ]; then
+              echo "Error: Timeout waiting for API readiness endpoint."
+              curl -f ${{ matrix.config.base_url }}/readyz || echo "Readiness check failed"
+              docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+              exit 1
+            fi
+            
+            # Try to get readiness status
+            response=$(curl -s ${{ matrix.config.base_url }}/readyz 2>/dev/null || echo "")
+            if echo "$response" | grep -q '"status":"ready"'; then
+              echo "API readiness endpoint is ready."
+              break
+            fi
+            
+            sleep 5
+            current_wait=$((current_wait + 5))
+          done
+
+      - name: Wait for health endpoint to be healthy
+        run: |
+          echo "Waiting for health endpoint to return healthy status..."
+          max_wait=60
+          current_wait=0
+          while true; do
+            if [ $current_wait -ge $max_wait ]; then
+              echo "Error: Timeout waiting for health endpoint to be healthy."
+              curl -f ${{ matrix.config.base_url }}/healthz || echo "Health check failed"
+              docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+              exit 1
+            fi
+            
+            # Try to get health status
+            response=$(curl -s ${{ matrix.config.base_url }}/healthz 2>/dev/null || echo "")
+            if echo "$response" | grep -q '"status":"healthy"'; then
+              echo "Health endpoint is healthy."
+              break
+            fi
+            
+            sleep 5
+            current_wait=$((current_wait + 5))
+          done
+
       - name: Install test dependencies
         run: pip install requests colorama
 
       - name: Run smoke test
         run: |
-          python scripts/smoke_test.py --base-url ${{ matrix.config.base_url }}
+          python scripts/smoke_test.py --base-url ${{ matrix.config.base_url }} --timeout 5.0
         env:
           ENV_FOR_TEST: ${{ matrix.config.env }}
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== API Logs ==="
+          docker compose -f ${{ matrix.config.compose_file }} logs ${{ matrix.config.service }}
+          echo "=== Qdrant Logs ==="
+          docker compose -f ${{ matrix.config.compose_file }} logs qdrant

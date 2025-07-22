@@ -14,14 +14,6 @@ networks:
   monitoring:
     driver: bridge
 
-volumes:
-  qdata:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
-
 services:
   api:
     build:
@@ -184,3 +176,11 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  qdata:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
