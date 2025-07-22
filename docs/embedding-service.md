@@ -241,7 +241,7 @@ from saathy.embedding.service import get_embedding_service
 async def main():
     # Get embedding service
     service = await get_embedding_service()
-    
+
     # Single text embedding
     result = await service.embed_text(
         text="Hello world",
@@ -249,12 +249,12 @@ async def main():
         quality="balanced"
     )
     print(f"Embedding shape: {result.embeddings.shape}")
-    
+
     # Batch embedding
     texts = ["Text 1", "Text 2", "Text 3"]
     results = await service.embed_batch(texts, "text")
     print(f"Processed {len(results)} texts")
-    
+
     # Code embedding
     code_result = await service.embed_code(
         code="def hello(): return 'world'",
@@ -376,4 +376,4 @@ export DEBUG=true
 - **Vector Search**: Integration with similarity search
 - **Document Processing**: Automated document ingestion
 - **Real-time Updates**: Live embedding updates
-- **Analytics**: Advanced usage analytics and insights 
+- **Analytics**: Advanced usage analytics and insights
