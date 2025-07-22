@@ -11,6 +11,9 @@ A FastAPI-based application foundation for building a personal AI copilot, curre
 **Implemented Features:**
 - **FastAPI Web Framework**: Production-ready API with health monitoring endpoints
 - **Vector Database Integration**: Qdrant client setup with health check connectivity
+- **Embedding Service**: Multi-model embedding with support for text, code, and multimodal content
+- **Content Preprocessing**: Specialized preprocessing for different content types (text, code, meetings, images)
+- **Chunking Strategies**: Multiple chunking strategies (fixed, semantic, document-aware, code)
 - **Observability**: OpenTelemetry tracing and structured logging with Jaeger integration
 - **Production Deployment**: Complete Docker Compose setup with Nginx, monitoring stack
 - **Development Infrastructure**: Poetry dependency management, comprehensive testing, code quality tools
@@ -20,6 +23,13 @@ A FastAPI-based application foundation for building a personal AI copilot, curre
 - `GET /healthz` - Health check with Qdrant connectivity verification
 - `GET /readyz` - Readiness check for service availability
 - `GET /config` - Non-sensitive configuration display
+- `POST /embed` - Generate embeddings for single text
+- `POST /embed/batch` - Generate embeddings for multiple texts
+- `POST /embed/code` - Generate embeddings for code content
+- `GET /embed/models` - List available embedding models
+- `GET /embed/metrics` - Get embedding service metrics
+- `GET /embed/cache/stats` - Get cache statistics
+- `DELETE /embed/cache` - Clear embedding cache
 
 ## 🏗️ Architecture
 
@@ -31,6 +41,12 @@ src/saathy/
 ├── main.py             # Server entrypoint
 ├── scheduler.py        # APScheduler setup (basic)
 ├── telemetry.py        # OpenTelemetry tracing configuration
+├── embedding/          # Embedding service
+│   ├── __init__.py     # Embedding package exports
+│   ├── models.py       # Model registry and management
+│   ├── preprocessing.py # Content preprocessing
+│   ├── chunking.py     # Content chunking strategies
+│   └── service.py      # Main embedding service
 └── vector/
     └── repository.py   # Qdrant client wrapper with health check
 ```
@@ -131,6 +147,9 @@ The project includes pre-commit hooks for automatic code formatting and linting:
 - **Ruff**: Fast Python linter and formatter
 - **Black**: Code formatting
 - **isort**: Import sorting
+```bash
+poetry run pre-commit run --all-files
+```
 
 ### Docker Development
 ```bash
@@ -157,6 +176,12 @@ docker-compose -f docker-compose.dev.yml up -d --build
 | `QDRANT_URL` | Qdrant vector database URL | `http://localhost:6333` |
 | `QDRANT_API_KEY` | Qdrant API key | `None` |
 | `OPENAI_API_KEY` | OpenAI API key | `None` |
+| `DEFAULT_EMBEDDING_MODEL` | Default embedding model | `all-MiniLM-L6-v2` |
+| `EMBEDDING_CACHE_SIZE` | Maximum cached embeddings | `1000` |
+| `EMBEDDING_CACHE_TTL` | Cache TTL in seconds | `3600` |
+| `EMBEDDING_BATCH_SIZE` | Batch size for embeddings | `32` |
+| `ENABLE_GPU_EMBEDDINGS` | Enable GPU acceleration | `true` |
+| `EMBEDDING_QUALITY_PREFERENCE` | Quality preference (fast/balanced/high) | `balanced` |
 | `ENABLE_TRACING` | Enable OpenTelemetry tracing | `false` |
 | `HOST` | Server host address | `0.0.0.0` |
 | `PORT` | Server port | `8000` |
@@ -170,6 +195,34 @@ The production setup includes:
 - **OpenTelemetry Collector**: Distributed tracing
 - **Health Checks**: Container health monitoring
 - **Logging**: Structured JSON logging with rotation
+
+## 🔤 Embedding Service
+
+The embedding service provides multi-model support for generating vector embeddings from various content types including text, code, meetings, and images. It features intelligent preprocessing, multiple chunking strategies, caching, and comprehensive monitoring.
+
+**📖 [Complete Embedding Service Documentation](docs/embedding-service.md)**
+
+### Quick Start
+
+```bash
+# Single text embedding
+curl -X POST "http://localhost:8000/embed" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world", "content_type": "text"}'
+
+# Get available models
+curl "http://localhost:8000/embed/models"
+
+# Get service metrics
+curl "http://localhost:8000/embed/metrics"
+```
+
+### Key Features
+- **Multi-Model Support**: Local SentenceTransformers + OpenAI API
+- **Content-Specific Processing**: Text, code, meetings, images
+- **Multiple Chunking Strategies**: Fixed, semantic, document-aware, code
+- **Performance Optimization**: Caching, batch processing, GPU detection
+- **Comprehensive Monitoring**: Processing times, error rates, quality scores
 
 ## 📊 Monitoring
 
@@ -203,7 +256,7 @@ The production setup includes:
 - Code quality and formatting tools
 
 **What's Not Yet Implemented:**
-- Vector embedding and search functionality
+- Vector search and similarity matching
 - Git repository integration
 - Slack or other platform connectors
 - Meeting transcription capabilities
@@ -218,8 +271,9 @@ The production setup includes:
 - [x] Production deployment pipeline
 
 ### Phase 2: Core Features (In Progress)
-- [ ] Vector embedding and search
-- [ ] Document processing and chunking
+- [x] Vector embedding service
+- [x] Document processing and chunking
+- [ ] Vector search and similarity matching
 - [ ] Basic LLM integration
 - [ ] Repository connectors
 
