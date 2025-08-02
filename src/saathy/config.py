@@ -42,6 +42,17 @@ class Settings(BaseSettings):
     openai_model: str = Field(
         default="gpt-3.5-turbo", description="OpenAI model to use for completions"
     )
+    # GitHub connector settings
+    github_webhook_secret: Optional[SecretStr] = Field(
+        default=None, description="GitHub webhook secret for verification"
+    )
+    github_token: Optional[SecretStr] = Field(
+        default=None, description="GitHub personal access token"
+    )
+    github_repositories: str = Field(
+        default="", description="Comma-separated list of repositories to monitor"
+    )
+
 
     # Embedding settings
     default_embedding_model: str = Field(
@@ -136,6 +147,28 @@ class Settings(BaseSettings):
 
         # Fall back to environment variable
         return self.openai_api_key.get_secret_value() if self.openai_api_key else None
+
+    @property
+    def github_webhook_secret_str(self) -> Optional[str]:
+        """Get GitHub webhook secret as string if available."""
+        # First try to read from file
+        file_secret = self._read_secret_from_file("GITHUB_WEBHOOK_SECRET")
+        if file_secret:
+            return file_secret
+
+        # Fall back to environment variable
+        return self.github_webhook_secret.get_secret_value() if self.github_webhook_secret else None
+
+    @property
+    def github_token_str(self) -> Optional[str]:
+        """Get GitHub token as string if available."""
+        # First try to read from file
+        file_secret = self._read_secret_from_file("GITHUB_TOKEN")
+        if file_secret:
+            return file_secret
+
+        # Fall back to environment variable
+        return self.github_token.get_secret_value() if self.github_token else None
 
 
 def get_settings() -> Settings:
