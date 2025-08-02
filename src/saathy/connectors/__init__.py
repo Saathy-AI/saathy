@@ -1,0 +1,15 @@
+from .base import (
+    BaseConnector,
+    ContentType,
+    ConnectorStatus,
+    ProcessedContent,
+)
+from .github_connector import GithubConnector
+
+__all__ = [
+    "BaseConnector",
+    "ContentType",
+    "ConnectorStatus",
+    "ProcessedContent",
+    "GithubConnector",
+]
