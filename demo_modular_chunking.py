@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demonstration of the Modular Chunking System."""
+"""Demonstration of the Simplified Chunking System."""
 
 import sys
 import os
@@ -7,16 +7,15 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from saathy.chunking import (
     ChunkingProcessor, ChunkingConfig, ContentType,
-    FixedSizeChunker, SemanticChunker, CodeChunker,
-    ContentTypeDetector
+    FixedSizeChunker, SemanticChunker, CodeChunker, DocumentChunker,
+    ContentTypeDetector, ChunkAnalyzer, ChunkVisualizer
 )
-from saathy.chunking.analysis import ChunkAnalyzer, ChunkVisualizer
 
 
 def demonstrate_modular_architecture():
     """Demonstrate the modular architecture of the chunking system."""
     
-    print("🏗️  Modular Chunking System Architecture")
+    print("🏗️  Simplified Chunking System Architecture")
     print("=" * 50)
     
     # 1. Core Configuration
