@@ -4,7 +4,7 @@ This module provides a comprehensive chunking system with multiple strategies:
 
 ## Features
 - Fixed-size chunking with configurable overlap
-- Semantic chunking (sentence/paragraph boundaries) 
+- Semantic chunking (sentence/paragraph boundaries)
 - Code-aware chunking (function/class boundaries)
 - Document structure-aware chunking (headers, sections)
 - Meeting transcript chunking (speaker turns, timestamps)
@@ -35,6 +35,8 @@ processor = ChunkingProcessor(config)
 """
 
 # Core models and interfaces
+# Analysis tools
+from .analysis import ChunkAnalyzer, ChunkQualityMetrics, ChunkVisualizer
 from .core import (
     Chunk,
     ChunkingConfig,
@@ -70,13 +72,10 @@ from .utils import (
     generate_content_hash,
 )
 
-# Analysis tools
-from .analysis import ChunkAnalyzer, ChunkQualityMetrics, ChunkVisualizer
-
 __all__ = [
     # Core
     "Chunk",
-    "ChunkMetadata", 
+    "ChunkMetadata",
     "ContentType",
     "ChunkingStrategy",
     "ChunkingConfig",
@@ -88,7 +87,7 @@ __all__ = [
     "BaseChunkingStrategy",
     "CodeChunker",
     "DocumentChunker",
-    "EmailChunker", 
+    "EmailChunker",
     "FixedSizeChunker",
     "GitCommitChunker",
     "MeetingChunker",
@@ -96,7 +95,7 @@ __all__ = [
     "SlackMessageChunker",
     # Utilities
     "ContentTypeDetector",
-    "ChunkQualityValidator", 
+    "ChunkQualityValidator",
     "ChunkMerger",
     "ChunkCache",
     "generate_content_hash",

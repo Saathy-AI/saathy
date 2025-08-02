@@ -4,16 +4,14 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from .core import ChunkingConfig
+from .core import ChunkingConfig, ChunkMetadata, ContentType
 from .core import ChunkingProcessor as ChunkingProcessorInterface
-from .core import ChunkMetadata, ContentType
 from .core.exceptions import StrategyNotFoundError
 from .core.models import Chunk
 from .strategies import (
     CodeChunker,
     DocumentChunker,
     EmailChunker,
-    FixedSizeChunker,
     GitCommitChunker,
     MeetingChunker,
     SemanticChunker,

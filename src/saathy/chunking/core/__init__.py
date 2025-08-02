@@ -1,7 +1,7 @@
 """Core chunking models and interfaces."""
 
 from .exceptions import ChunkingError, ValidationError
-from .interfaces import ChunkingConfig, ChunkingStrategy, ChunkingProcessor
+from .interfaces import ChunkingConfig, ChunkingProcessor, ChunkingStrategy
 from .models import Chunk, ChunkMetadata, ContentType
 
 __all__ = [

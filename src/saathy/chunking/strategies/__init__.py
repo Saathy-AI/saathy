@@ -13,7 +13,7 @@ from .slack_message import SlackMessageChunker
 __all__ = [
     "BaseChunkingStrategy",
     "CodeChunker",
-    "DocumentChunker", 
+    "DocumentChunker",
     "EmailChunker",
     "FixedSizeChunker",
     "GitCommitChunker",
