@@ -3,8 +3,4 @@
 from .analyzer import ChunkAnalyzer, ChunkQualityMetrics
 from .visualizer import ChunkVisualizer
 
-__all__ = [
-    "ChunkAnalyzer",
-    "ChunkQualityMetrics", 
-    "ChunkVisualizer"
-] 
+__all__ = ["ChunkAnalyzer", "ChunkQualityMetrics", "ChunkVisualizer"]

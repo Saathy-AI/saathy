@@ -5,7 +5,7 @@ import hashlib
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional, dict, list
 
 import numpy as np
 
@@ -23,7 +23,7 @@ class EmbeddingResult:
     model_name: str
     content_type: str
     processing_time: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     quality_score: float = 1.0
     preprocessing_result: Optional[PreprocessingResult] = None
 
@@ -34,7 +34,7 @@ class EmbeddingCache:
     def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600):
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
-        self._cache: Dict[str, tuple] = {}  # key -> (embedding, timestamp)
+        self._cache: dict[str, tuple] = {}  # key -> (embedding, timestamp)
 
     def get(self, key: str) -> Optional[np.ndarray]:
         """Get embedding from cache if not expired."""
@@ -68,10 +68,10 @@ class EmbeddingMetrics:
     """Metrics collection for embedding operations."""
 
     def __init__(self):
-        self.processing_times: Dict[str, List[float]] = {}
-        self.error_counts: Dict[str, int] = {}
-        self.model_usage: Dict[str, int] = {}
-        self.content_type_stats: Dict[str, Dict[str, Any]] = {}
+        self.processing_times: dict[str, list[float]] = {}
+        self.error_counts: dict[str, int] = {}
+        self.model_usage: dict[str, int] = {}
+        self.content_type_stats: dict[str, dict[str, Any]] = {}
 
     def record_processing_time(
         self, model_name: str, content_type: str, time_seconds: float
@@ -117,7 +117,7 @@ class EmbeddingMetrics:
         stats["avg_quality_score"] = np.mean(stats["quality_scores"])
         stats["avg_word_count"] = np.mean(stats["word_counts"])
 
-    def get_model_performance(self, model_name: str) -> Dict[str, Any]:
+    def get_model_performance(self, model_name: str) -> dict[str, Any]:
         """Get performance statistics for a model."""
         performance = {
             "usage_count": self.model_usage.get(model_name, 0),
@@ -146,11 +146,11 @@ class EmbeddingMetrics:
 
         return performance
 
-    def get_content_type_performance(self, content_type: str) -> Dict[str, Any]:
+    def get_content_type_performance(self, content_type: str) -> dict[str, Any]:
         """Get performance statistics for a content type."""
         return self.content_type_stats.get(content_type, {})
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get overall metrics summary."""
         return {
             "total_models_used": len(self.model_usage),
@@ -216,7 +216,7 @@ class EmbeddingService:
 
     def _chunk_content(
         self, content: str, max_length: int, overlap: int = 50
-    ) -> List[str]:
+    ) -> list[str]:
         """Chunk content into smaller pieces with overlap."""
         if len(content) <= max_length:
             return [content]
@@ -251,7 +251,7 @@ class EmbeddingService:
         content_type: str = "text",
         model_name: Optional[str] = None,
         quality: str = "balanced",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ) -> EmbeddingResult:
         """Embed a single text document."""
         start_time = time.time()
@@ -337,12 +337,12 @@ class EmbeddingService:
 
     async def embed_batch(
         self,
-        texts: List[str],
+        texts: list[str],
         content_type: str = "text",
         model_name: Optional[str] = None,
         quality: str = "balanced",
-        metadata_list: Optional[List[Dict[str, Any]]] = None,
-    ) -> List[EmbeddingResult]:
+        metadata_list: Optional[list[dict[str, Any]]] = None,
+    ) -> list[EmbeddingResult]:
         """Embed multiple texts efficiently."""
         if not texts:
             return []
@@ -390,7 +390,7 @@ class EmbeddingService:
         code: str,
         language: Optional[str] = None,
         model_name: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
     ) -> EmbeddingResult:
         """Embed code with specialized preprocessing."""
         if metadata is None:
@@ -402,18 +402,18 @@ class EmbeddingService:
         return await self.embed_text(code, "code", model_name, "high", metadata)
 
     async def embed_multimodal(
-        self, content: str, content_type: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, content_type: str, metadata: Optional[dict[str, Any]] = None
     ) -> EmbeddingResult:
         """Embed multimodal content."""
         # For now, treat as regular text embedding
         # Future: implement actual multimodal embedding
         return await self.embed_text(content, content_type, None, "high", metadata)
 
-    def get_available_models(self) -> List[str]:
+    def get_available_models(self) -> list[str]:
         """Get list of available models."""
         return self.registry.list_models()
 
-    def get_model_info(self, model_name: str) -> Optional[Dict[str, Any]]:
+    def get_model_info(self, model_name: str) -> Optional[dict[str, Any]]:
         """Get information about a specific model."""
         model = self.registry.get_model(model_name)
         if not model:
@@ -429,7 +429,7 @@ class EmbeddingService:
             "device": model.get_device(),
         }
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get embedding service metrics."""
         return self.metrics.get_summary()
 
@@ -443,7 +443,7 @@ class EmbeddingService:
         self._batch_size = max(1, min(batch_size, 128))  # Limit between 1 and 128
         logger.info(f"Batch size set to {self._batch_size}")
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return {
             "size": self.cache.size(),

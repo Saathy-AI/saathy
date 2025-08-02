@@ -4,7 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union, dict, list
 
 import numpy as np
 import torch
@@ -44,7 +44,7 @@ class EmbeddingModel:
         """Load the model asynchronously."""
         raise NotImplementedError
 
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(self, texts: Union[str, list[str]]) -> np.ndarray:
         """Generate embeddings for input texts."""
         raise NotImplementedError
 
@@ -98,7 +98,7 @@ class SentenceTransformerModel(EmbeddingModel):
         except Exception as e:
             logger.warning(f"Model warmup failed for {self.metadata.name}: {e}")
 
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(self, texts: Union[str, list[str]]) -> np.ndarray:
         """Generate embeddings using sentence transformer."""
         if not self._is_loaded:
             await self.load()
@@ -139,12 +139,14 @@ class OpenAIModel(EmbeddingModel):
             self._is_loaded = True
             logger.info(f"OpenAI client initialized for {self.metadata.name}")
         except ImportError:
-            raise ImportError("openai package is required for OpenAI embeddings")
+            raise ImportError(
+                "openai package is required for OpenAI embeddings"
+            ) from None
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI client: {e}")
-            raise
+            raise ImportError(f"Failed to initialize OpenAI client: {e}") from e
 
-    async def embed(self, texts: Union[str, List[str]]) -> np.ndarray:
+    async def embed(self, texts: Union[str, list[str]]) -> np.ndarray:
         """Generate embeddings using OpenAI API."""
         if not self._is_loaded:
             await self.load()
@@ -169,7 +171,7 @@ class ModelRegistry:
     """Registry for managing embedding models."""
 
     def __init__(self):
-        self._models: Dict[str, EmbeddingModel] = {}
+        self._models: dict[str, EmbeddingModel] = {}
         self._settings = get_settings()
         self._cache_dir = Path.home() / ".cache" / "saathy" / "models"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
@@ -183,11 +185,11 @@ class ModelRegistry:
         """Get a model by name."""
         return self._models.get(name)
 
-    def list_models(self) -> List[str]:
-        """List all registered model names."""
+    def list_models(self) -> list[str]:
+        """list all registered model names."""
         return list(self._models.keys())
 
-    def get_model_by_type(self, model_type: str) -> List[EmbeddingModel]:
+    def get_model_by_type(self, model_type: str) -> list[EmbeddingModel]:
         """Get all models of a specific type."""
         return [
             model

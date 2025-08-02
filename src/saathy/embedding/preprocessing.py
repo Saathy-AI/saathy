@@ -1,10 +1,11 @@
 """Content preprocessing for embedding generation."""
 
+import importlib.util
 import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional, dict, list
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +15,11 @@ class PreprocessingResult:
     """Result of content preprocessing."""
 
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     content_type: str
     language: Optional[str] = None
     quality_score: float = 1.0
-    preprocessing_steps: List[str] = field(default_factory=list)
+    preprocessing_steps: list[str] = field(default_factory=list)
 
 
 class ContentPreprocessor(ABC):
@@ -26,7 +27,7 @@ class ContentPreprocessor(ABC):
 
     @abstractmethod
     def preprocess(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, metadata: Optional[dict[str, Any]] = None
     ) -> PreprocessingResult:
         """Preprocess content for embedding."""
         pass
@@ -47,7 +48,7 @@ class TextPreprocessor(ContentPreprocessor):
         return "text"
 
     def preprocess(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, metadata: Optional[dict[str, Any]] = None
     ) -> PreprocessingResult:
         """Preprocess general text content."""
         steps = []
@@ -169,7 +170,7 @@ class CodePreprocessor(ContentPreprocessor):
         return "code"
 
     def preprocess(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, metadata: Optional[dict[str, Any]] = None
     ) -> PreprocessingResult:
         """Preprocess code content."""
         steps = []
@@ -218,7 +219,7 @@ class CodePreprocessor(ContentPreprocessor):
             preprocessing_steps=steps,
         )
 
-    def _detect_language(self, content: str, metadata: Optional[Dict[str, Any]]) -> str:
+    def _detect_language(self, content: str, metadata: Optional[dict[str, Any]]) -> str:
         """Detect programming language."""
         if metadata and "file_extension" in metadata:
             ext = metadata["file_extension"].lower()
@@ -260,7 +261,7 @@ class CodePreprocessor(ContentPreprocessor):
         content = re.sub(r"\n\s*\n", "\n", content)
         return content.strip()
 
-    def _extract_functions(self, content: str, language: str) -> List[str]:
+    def _extract_functions(self, content: str, language: str) -> list[str]:
         """Extract function signatures."""
         functions = []
 
@@ -291,7 +292,7 @@ class CodePreprocessor(ContentPreprocessor):
         return "\n".join(lines)
 
     def _calculate_code_quality(
-        self, original: str, processed: str, functions: List[str]
+        self, original: str, processed: str, functions: list[str]
     ) -> float:
         """Calculate code quality score."""
         if not original or not processed:
@@ -323,7 +324,7 @@ class MeetingPreprocessor(ContentPreprocessor):
         return "meeting"
 
     def preprocess(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, metadata: Optional[dict[str, Any]] = None
     ) -> PreprocessingResult:
         """Preprocess meeting transcripts."""
         steps = []
@@ -370,7 +371,7 @@ class MeetingPreprocessor(ContentPreprocessor):
             preprocessing_steps=steps,
         )
 
-    def _extract_speakers(self, content: str) -> List[str]:
+    def _extract_speakers(self, content: str) -> list[str]:
         """Extract unique speakers from transcript."""
         # Common patterns for speaker identification
         patterns = [
@@ -389,7 +390,7 @@ class MeetingPreprocessor(ContentPreprocessor):
 
         return list(speakers)
 
-    def _extract_timestamps(self, content: str) -> List[str]:
+    def _extract_timestamps(self, content: str) -> list[str]:
         """Extract timestamps from transcript."""
         # Common timestamp patterns
         patterns = [
@@ -418,7 +419,7 @@ class MeetingPreprocessor(ContentPreprocessor):
         content = re.sub(r"\s+", " ", content)
         return content.strip()
 
-    def _extract_topics(self, content: str) -> List[str]:
+    def _extract_topics(self, content: str) -> list[str]:
         """Extract key topics from meeting content."""
         # Simple keyword extraction
         keywords = [
@@ -442,7 +443,7 @@ class MeetingPreprocessor(ContentPreprocessor):
         return topics
 
     def _calculate_meeting_quality(
-        self, original: str, processed: str, speakers: List[str]
+        self, original: str, processed: str, speakers: list[str]
     ) -> float:
         """Calculate meeting transcript quality."""
         if not original or not processed:
@@ -469,7 +470,7 @@ class ImagePreprocessor(ContentPreprocessor):
         return "image"
 
     def preprocess(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, metadata: Optional[dict[str, Any]] = None
     ) -> PreprocessingResult:
         """Preprocess image content (extract text via OCR)."""
         steps = []
@@ -517,8 +518,8 @@ class ImagePreprocessor(ContentPreprocessor):
     def _check_ocr_availability(self) -> bool:
         """Check if OCR libraries are available."""
         try:
-            import pytesseract
-            from PIL import Image
+            importlib.util.find_spec("pytesseract")
+            importlib.util.find_spec("PIL")
 
             return True
         except ImportError:
@@ -550,7 +551,7 @@ class ImagePreprocessor(ContentPreprocessor):
 
         return text.strip()
 
-    def _extract_visual_context(self, metadata: Optional[Dict[str, Any]]) -> str:
+    def _extract_visual_context(self, metadata: Optional[dict[str, Any]]) -> str:
         """Extract visual context from image metadata."""
         if not metadata:
             return ""
@@ -600,7 +601,7 @@ class PreprocessingPipeline:
         }
 
     def preprocess(
-        self, content: str, content_type: str, metadata: Optional[Dict[str, Any]] = None
+        self, content: str, content_type: str, metadata: Optional[dict[str, Any]] = None
     ) -> PreprocessingResult:
         """Preprocess content using the appropriate preprocessor."""
         preprocessor = self.preprocessors.get(content_type)
@@ -613,7 +614,7 @@ class PreprocessingPipeline:
 
         return preprocessor.preprocess(content, metadata)
 
-    def get_supported_types(self) -> List[str]:
+    def get_supported_types(self) -> list[str]:
         """Get list of supported content types."""
         return list(self.preprocessors.keys())
 

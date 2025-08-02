@@ -495,7 +495,7 @@ Main processor class for content chunking.
 ```python
 class ChunkingProcessor:
     def __init__(self, config: Optional[ChunkingConfig] = None)
-    def chunk_content(self, content: str, content_type: Optional[ContentType] = None, 
+    def chunk_content(self, content: str, content_type: Optional[ContentType] = None,
                      file_extension: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None) -> List[Chunk]
     def chunk_file(self, file_path: str, metadata: Optional[Dict[str, Any]] = None) -> List[Chunk]
     def get_chunking_stats(self) -> Dict[str, Any]
@@ -593,4 +593,4 @@ print(f"Total chunks: {metrics.total_chunks}")
 print(f"Average quality: {metrics.quality_score:.2f}")
 ```
 
-This comprehensive chunking system provides the foundation for optimal vector search performance across diverse content types while maintaining semantic coherence and context preservation. 
+This comprehensive chunking system provides the foundation for optimal vector search performance across diverse content types while maintaining semantic coherence and context preservation.

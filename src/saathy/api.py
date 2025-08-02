@@ -2,9 +2,12 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Union
+from typing import Any, Optional, Union
 
 from fastapi import Depends, FastAPI
+
+# Embedding endpoints
+from pydantic import BaseModel
 
 from saathy import __version__
 from saathy.config import Settings, get_settings
@@ -139,12 +142,6 @@ async def get_config(settings: Settings = Depends(get_settings)) -> dict[str, st
     }
 
 
-# Embedding endpoints
-from typing import Any, Dict, List, Optional
-
-from pydantic import BaseModel
-
-
 class EmbeddingRequest(BaseModel):
     """Request model for embedding generation."""
 
@@ -152,17 +149,17 @@ class EmbeddingRequest(BaseModel):
     content_type: str = "text"
     model_name: Optional[str] = None
     quality: str = "balanced"
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class BatchEmbeddingRequest(BaseModel):
     """Request model for batch embedding generation."""
 
-    texts: List[str]
+    texts: list[str]
     content_type: str = "text"
     model_name: Optional[str] = None
     quality: str = "balanced"
-    metadata_list: Optional[List[Dict[str, Any]]] = None
+    metadata_list: Optional[list[dict[str, Any]]] = None
 
 
 class CodeEmbeddingRequest(BaseModel):
@@ -171,18 +168,18 @@ class CodeEmbeddingRequest(BaseModel):
     code: str
     language: Optional[str] = None
     model_name: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class EmbeddingResponse(BaseModel):
     """Response model for embedding generation."""
 
-    embeddings: List[List[float]]
+    embeddings: list[list[float]]
     model_name: str
     content_type: str
     processing_time: float
     quality_score: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 @app.post("/embed", response_model=EmbeddingResponse)
@@ -209,11 +206,11 @@ async def embed_text(
     )
 
 
-@app.post("/embed/batch", response_model=List[EmbeddingResponse])
+@app.post("/embed/batch", response_model=list[EmbeddingResponse])
 async def embed_batch(
     request: BatchEmbeddingRequest,
     embedding_service: EmbeddingService = Depends(get_embedding_service_dep),
-) -> List[EmbeddingResponse]:
+) -> list[EmbeddingResponse]:
     """Generate embeddings for multiple texts."""
     results = await embedding_service.embed_batch(
         texts=request.texts,
@@ -262,7 +259,7 @@ async def embed_code(
 @app.get("/embed/models")
 async def get_available_models(
     embedding_service: EmbeddingService = Depends(get_embedding_service_dep),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get list of available embedding models."""
     models = embedding_service.get_available_models()
     model_info = {}
@@ -278,7 +275,7 @@ async def get_available_models(
 @app.get("/embed/metrics")
 async def get_embedding_metrics(
     embedding_service: EmbeddingService = Depends(get_embedding_service_dep),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get embedding service metrics."""
     return embedding_service.get_metrics()
 
@@ -286,7 +283,7 @@ async def get_embedding_metrics(
 @app.get("/embed/cache/stats")
 async def get_cache_stats(
     embedding_service: EmbeddingService = Depends(get_embedding_service_dep),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get embedding cache statistics."""
     return embedding_service.get_cache_stats()
 
@@ -294,7 +291,7 @@ async def get_cache_stats(
 @app.delete("/embed/cache")
 async def clear_cache(
     embedding_service: EmbeddingService = Depends(get_embedding_service_dep),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Clear the embedding cache."""
     embedding_service.clear_cache()
     return {"message": "Cache cleared successfully"}

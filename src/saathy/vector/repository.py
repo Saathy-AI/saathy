@@ -50,7 +50,7 @@ class VectorRepository:
         """Upsert vectors with batch processing support.
 
         Args:
-            documents: List of documents to upsert
+            documents: list of documents to upsert
             batch_size: Number of documents to process in each batch
 
         Returns:
@@ -165,7 +165,7 @@ class VectorRepository:
             collection_name: Optional collection name override
 
         Returns:
-            List of search results with documents and scores
+            list of search results with documents and scores
         """
         collection_name = collection_name or self.collection_name
         start_time = time.time()
@@ -237,7 +237,7 @@ class VectorRepository:
         """Delete vectors by IDs with soft delete option.
 
         Args:
-            ids: List of document IDs to delete
+            ids: list of document IDs to delete
             soft_delete: If True, mark as deleted instead of removing
             collection_name: Optional collection name override
 
@@ -277,7 +277,7 @@ class VectorRepository:
                     "hard_delete",
                     lambda client: client.delete(
                         collection_name=collection_name,
-                        points_selector=models.PointIdsList(points=ids),
+                        points_selector=models.PointIdslist(points=ids),
                     ),
                 )
 
@@ -342,7 +342,7 @@ class VectorRepository:
         """Bulk import documents for initial data loading.
 
         Args:
-            documents: List of documents to import
+            documents: list of documents to import
             batch_size: Number of documents to process in each batch
 
         Returns:

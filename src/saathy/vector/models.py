@@ -135,7 +135,7 @@ class BulkImportResult(BaseModel):
         ..., ge=0.0, description="Total processing time in seconds"
     )
     errors: list[str] = Field(
-        default_factory=list, description="List of error messages"
+        default_factory=list, description="list of error messages"
     )
 
     @property

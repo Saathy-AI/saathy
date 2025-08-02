@@ -1,79 +1,109 @@
-"""Intelligent text chunking strategies for optimal vector search."""
+"""Intelligent text chunking strategies for optimal vector search.
+
+This module provides a comprehensive chunking system with multiple strategies:
+
+## Features
+- Fixed-size chunking with configurable overlap
+- Semantic chunking (sentence/paragraph boundaries) 
+- Code-aware chunking (function/class boundaries)
+- Document structure-aware chunking (headers, sections)
+- Meeting transcript chunking (speaker turns, timestamps)
+- Git commit chunking (commit messages, diffs)
+- Slack message chunking (threads, mentions)
+- Email chunking (headers, body)
+- Content type auto-detection
+- Quality validation and analysis
+- Caching and optimization
+
+## Usage
+
+```python
+from saathy.chunking import ChunkingProcessor
+
+# Basic usage
+processor = ChunkingProcessor()
+chunks = processor.chunk_content("Your text content here")
+
+# With specific content type
+chunks = processor.chunk_content("def function():\n    pass", content_type="code")
+
+# Advanced configuration
+from saathy.chunking import ChunkingConfig
+config = ChunkingConfig(max_chunk_size=1024, overlap=100)
+processor = ChunkingProcessor(config)
+```
+"""
 
 # Core models and interfaces
 from .core import (
     Chunk,
-    ChunkMetadata,
-    ContentType,
-    ChunkingStrategy,
     ChunkingConfig,
     ChunkingError,
-    ValidationError
+    ChunkingStrategy,
+    ChunkMetadata,
+    ContentType,
+    ValidationError,
 )
 
 # Main processor
 from .processor import ChunkingProcessor
 
-# Strategies
+# All chunking strategies
 from .strategies import (
-    FixedSizeChunker,
-    SemanticChunker,
+    BaseChunkingStrategy,
     CodeChunker,
     DocumentChunker,
-    MeetingChunker,
+    EmailChunker,
+    FixedSizeChunker,
     GitCommitChunker,
+    MeetingChunker,
+    SemanticChunker,
     SlackMessageChunker,
-    EmailChunker
 )
 
 # Utilities
 from .utils import (
-    ContentTypeDetector,
-    ChunkQualityValidator,
-    ChunkMerger,
     ChunkCache,
-    generate_content_hash
+    ChunkMerger,
+    ChunkQualityValidator,
+    ContentTypeDetector,
+    generate_content_hash,
 )
 
 # Analysis tools
-from .analysis import (
-    ChunkAnalyzer,
-    ChunkVisualizer,
-    ChunkQualityMetrics
-)
+from .analysis import ChunkAnalyzer, ChunkQualityMetrics, ChunkVisualizer
 
 __all__ = [
     # Core
     "Chunk",
-    "ChunkMetadata",
+    "ChunkMetadata", 
     "ContentType",
     "ChunkingStrategy",
     "ChunkingConfig",
     "ChunkingError",
     "ValidationError",
-    
     # Main processor
     "ChunkingProcessor",
-    
-    # Strategies
-    "FixedSizeChunker",
-    "SemanticChunker", 
+    # All strategies
+    "BaseChunkingStrategy",
     "CodeChunker",
     "DocumentChunker",
-    "MeetingChunker",
+    "EmailChunker", 
+    "FixedSizeChunker",
     "GitCommitChunker",
+    "MeetingChunker",
+    "SemanticChunker",
     "SlackMessageChunker",
-    "EmailChunker",
-    
     # Utilities
     "ContentTypeDetector",
-    "ChunkQualityValidator",
+    "ChunkQualityValidator", 
     "ChunkMerger",
     "ChunkCache",
     "generate_content_hash",
-    
     # Analysis
     "ChunkAnalyzer",
     "ChunkVisualizer",
-    "ChunkQualityMetrics"
-] 
+    "ChunkQualityMetrics",
+]
+
+__version__ = "0.1.0"

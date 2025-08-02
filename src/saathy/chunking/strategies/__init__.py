@@ -1,23 +1,23 @@
-"""Chunking strategies for different content types."""
+"""Intelligent chunking strategies for optimal vector search."""
 
 from .base import BaseChunkingStrategy
-from .fixed_size import FixedSizeChunker
-from .semantic import SemanticChunker
 from .code import CodeChunker
 from .document import DocumentChunker
-from .meeting import MeetingChunker
-from .git_commit import GitCommitChunker
-from .slack_message import SlackMessageChunker
 from .email import EmailChunker
+from .fixed_size import FixedSizeChunker
+from .git_commit import GitCommitChunker
+from .meeting import MeetingChunker
+from .semantic import SemanticChunker
+from .slack_message import SlackMessageChunker
 
 __all__ = [
     "BaseChunkingStrategy",
-    "FixedSizeChunker",
-    "SemanticChunker",
     "CodeChunker",
-    "DocumentChunker",
-    "MeetingChunker",
+    "DocumentChunker", 
+    "EmailChunker",
+    "FixedSizeChunker",
     "GitCommitChunker",
+    "MeetingChunker",
+    "SemanticChunker",
     "SlackMessageChunker",
-    "EmailChunker"
-] 
+]

@@ -4,7 +4,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional, dict, list
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class Chunk:
     start_index: int
     end_index: int
     chunk_type: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     overlap_with_previous: int = 0
     overlap_with_next: int = 0
 
@@ -31,8 +31,8 @@ class ChunkingStrategy(ABC):
 
     @abstractmethod
     def chunk(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Chunk]:
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> list[Chunk]:
         """Split content into chunks."""
         pass
 
@@ -49,8 +49,8 @@ class FixedSizeChunking(ChunkingStrategy):
         return "fixed_size"
 
     def chunk(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Chunk]:
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> list[Chunk]:
         """Split content into fixed-size chunks."""
         if len(content) <= self.max_chunk_size:
             return [
@@ -112,8 +112,8 @@ class SemanticChunking(ChunkingStrategy):
         return "semantic"
 
     def chunk(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Chunk]:
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> list[Chunk]:
         """Split content based on semantic boundaries."""
         if len(content) <= self.max_chunk_size:
             return [
@@ -206,8 +206,8 @@ class DocumentAwareChunking(ChunkingStrategy):
         return "document_aware"
 
     def chunk(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Chunk]:
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> list[Chunk]:
         """Split content based on document structure."""
         if len(content) <= self.max_chunk_size:
             return [
@@ -243,13 +243,13 @@ class DocumentAwareChunking(ChunkingStrategy):
 
         return chunks
 
-    def _split_into_sections(self, content: str) -> List[Dict[str, Any]]:
+    def _split_into_sections(self, content: str) -> list[dict[str, Any]]:
         """Split content into sections based on headers."""
         lines = content.split("\n")
         sections = []
         current_section = {"content": "", "start": 0, "end": 0, "type": "body"}
 
-        for i, line in enumerate(lines):
+        for line in lines:
             # Check if line is a section header
             is_header = any(
                 re.match(pattern, line) for pattern in self.section_patterns
@@ -282,8 +282,8 @@ class DocumentAwareChunking(ChunkingStrategy):
         return sections
 
     def _chunk_section(
-        self, section: Dict[str, Any], metadata: Optional[Dict[str, Any]]
-    ) -> List[Chunk]:
+        self, section: dict[str, Any], metadata: Optional[dict[str, Any]]
+    ) -> list[Chunk]:
         """Split a section into chunks."""
         content = section["content"]
         chunks = []
@@ -334,8 +334,8 @@ class CodeChunking(ChunkingStrategy):
         return "code"
 
     def chunk(
-        self, content: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Chunk]:
+        self, content: str, metadata: Optional[dict[str, Any]] = None
+    ) -> list[Chunk]:
         """Split code content based on function boundaries."""
         if len(content) <= self.max_chunk_size:
             return [
@@ -379,7 +379,7 @@ class CodeChunking(ChunkingStrategy):
 
         return chunks
 
-    def _extract_functions(self, content: str, language: str) -> List[Dict[str, Any]]:
+    def _extract_functions(self, content: str, language: str) -> list[dict[str, Any]]:
         """Extract functions from code."""
         functions = []
         pattern = self.function_patterns.get(language)
@@ -408,8 +408,8 @@ class CodeChunking(ChunkingStrategy):
         return functions
 
     def _chunk_function(
-        self, func: Dict[str, Any], metadata: Optional[Dict[str, Any]]
-    ) -> List[Chunk]:
+        self, func: dict[str, Any], metadata: Optional[dict[str, Any]]
+    ) -> list[Chunk]:
         """Split a large function into chunks."""
         content = func["content"]
         chunks = []
@@ -462,8 +462,8 @@ class ChunkingPipeline:
         strategy: str = "semantic",
         max_chunk_size: Optional[int] = None,
         overlap: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> List[Chunk]:
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> list[Chunk]:
         """Chunk content using the specified strategy."""
         if strategy not in self.strategies:
             raise ValueError(f"Unknown chunking strategy: {strategy}")
@@ -478,7 +478,7 @@ class ChunkingPipeline:
 
         return chunker.chunk(content, metadata)
 
-    def get_available_strategies(self) -> List[str]:
+    def get_available_strategies(self) -> list[str]:
         """Get list of available chunking strategies."""
         return list(self.strategies.keys())
 
@@ -488,8 +488,8 @@ class ChunkingPipeline:
         logger.info(f"Added custom chunking strategy: {name}")
 
     def validate_chunks(
-        self, chunks: List[Chunk], original_content: str
-    ) -> Dict[str, Any]:
+        self, chunks: list[Chunk], original_content: str
+    ) -> dict[str, Any]:
         """Validate chunk quality and coverage."""
         if not chunks:
             return {"valid": False, "error": "No chunks generated"}

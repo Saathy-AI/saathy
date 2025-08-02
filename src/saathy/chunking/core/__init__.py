@@ -1,15 +1,15 @@
 """Core chunking models and interfaces."""
 
-from .models import Chunk, ChunkMetadata, ContentType
-from .interfaces import ChunkingStrategy, ChunkingConfig
 from .exceptions import ChunkingError, ValidationError
+from .interfaces import ChunkingConfig, ChunkingStrategy
+from .models import Chunk, ChunkMetadata, ContentType
 
 __all__ = [
     "Chunk",
-    "ChunkMetadata", 
+    "ChunkMetadata",
     "ContentType",
     "ChunkingStrategy",
     "ChunkingConfig",
     "ChunkingError",
-    "ValidationError"
-] 
+    "ValidationError",
+]
