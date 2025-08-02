@@ -4,6 +4,7 @@ from .base import (
     ContentType,
     ProcessedContent,
 )
+from .content_processor import ContentProcessor
 from .github_connector import GithubConnector
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "ContentType",
     "ConnectorStatus",
     "ProcessedContent",
+    "ContentProcessor",
     "GithubConnector",
 ]
