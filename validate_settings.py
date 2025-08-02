@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Simple validation script for the settings management system."""
 
-from src.saathy.config import get_settings
+import sys
+
+sys.path.insert(0, 'src')
+from saathy.config import get_settings
 
 
 def test_singleton():

@@ -43,6 +43,27 @@ class Settings(BaseSettings):
         default="gpt-3.5-turbo", description="OpenAI model to use for completions"
     )
 
+    # Embedding settings
+    default_embedding_model: str = Field(
+        default="all-MiniLM-L6-v2", description="Default embedding model to use"
+    )
+    embedding_cache_size: int = Field(
+        default=1000, description="Maximum number of cached embeddings"
+    )
+    embedding_cache_ttl: int = Field(
+        default=3600, description="Time-to-live for cached embeddings in seconds"
+    )
+    embedding_batch_size: int = Field(
+        default=32, description="Batch size for embedding operations"
+    )
+    enable_gpu_embeddings: bool = Field(
+        default=True, description="Enable GPU acceleration for embeddings"
+    )
+    embedding_quality_preference: str = Field(
+        default="balanced",
+        description="Embedding quality preference (fast, balanced, high)",
+    )
+
     # Observability settings
     service_name: str = Field(
         default="saathy", description="Service name for telemetry"
@@ -120,3 +141,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get a new settings instance for dependency injection."""
     return Settings()
+
+
+# Global settings instance
+settings = Settings()
