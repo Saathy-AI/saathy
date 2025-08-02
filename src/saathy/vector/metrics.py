@@ -59,7 +59,7 @@ class VectorMetrics:
             operation: Name of the operation
 
         Returns:
-            Dictionary with operation statistics
+            dictionary with operation statistics
         """
         times = self.operation_times.get(operation, [])
         total_count = self.operation_counts.get(operation, 0)
@@ -98,7 +98,7 @@ class VectorMetrics:
         """Get statistics for all operations.
 
         Returns:
-            Dictionary with all operation statistics
+            dictionary with all operation statistics
         """
         all_operations = set(self.operation_counts.keys())
         stats = {}
@@ -160,7 +160,7 @@ class VectorMetrics:
         """Get statistics for all collections.
 
         Returns:
-            Dictionary with all collection statistics
+            dictionary with all collection statistics
         """
         return self.collection_stats.copy()
 

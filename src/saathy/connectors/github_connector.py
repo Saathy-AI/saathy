@@ -1,6 +1,6 @@
 import logging
-from typing import Any, Dict, List
 from datetime import datetime
+from typing import Any
 
 from saathy.connectors.base import (
     BaseConnector,
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class GithubConnector(BaseConnector):
     """Connector for GitHub to process webhook events."""
 
-    def __init__(self, name: str, config: Dict[str, Any]):
+    def __init__(self, name: str, config: dict[str, Any]):
         super().__init__(name, config)
 
     async def start(self) -> None:
@@ -30,7 +30,7 @@ class GithubConnector(BaseConnector):
         self.status = ConnectorStatus.INACTIVE
         logger.info(f"{self.name} connector stopped.")
 
-    async def process_event(self, event_data: Dict[str, Any]) -> List[ProcessedContent]:
+    async def process_event(self, event_data: dict[str, Any]) -> list[ProcessedContent]:
         """Process a GitHub webhook event."""
         # In a real scenario, we'd get this from request headers.
         # For now, we'll assume it's part of the event_data for simulation.
@@ -56,7 +56,7 @@ class GithubConnector(BaseConnector):
             self.status = ConnectorStatus.ERROR
             return []
 
-    async def _process_push_event(self, payload: Dict[str, Any]) -> List[ProcessedContent]:
+    async def _process_push_event(self, payload: dict[str, Any]) -> list[ProcessedContent]:
         """Process a 'push' event."""
         processed_items = []
         repo_name = payload.get("repository", {}).get("full_name")
@@ -83,14 +83,14 @@ class GithubConnector(BaseConnector):
         logger.info(f"Processed {len(processed_items)} commits from push event for {repo_name}.")
         return processed_items
 
-    async def _process_pull_request_event(self, payload: Dict[str, Any]) -> List[ProcessedContent]:
+    async def _process_pull_request_event(self, payload: dict[str, Any]) -> list[ProcessedContent]:
         """Process a 'pull_request' event."""
         pr = payload.get("pull_request", {})
         repo_name = payload.get("repository", {}).get("full_name")
         pr_id = pr.get("id")
         if not pr_id:
             return []
-            
+
         action = payload.get("action")
         title = pr.get("title", "")
         body = pr.get("body", "")
@@ -114,7 +114,7 @@ class GithubConnector(BaseConnector):
         logger.info(f"Processed pull request event: {action} for {repo_name} #{pr.get('number')}.")
         return [processed_item]
 
-    async def _process_issues_event(self, payload: Dict[str, Any]) -> List[ProcessedContent]:
+    async def _process_issues_event(self, payload: dict[str, Any]) -> list[ProcessedContent]:
         """Process an 'issues' event."""
         issue = payload.get("issue", {})
         repo_name = payload.get("repository", {}).get("full_name")

@@ -1,7 +1,7 @@
 from .base import (
     BaseConnector,
-    ContentType,
     ConnectorStatus,
+    ContentType,
     ProcessedContent,
 )
 from .github_connector import GithubConnector
