@@ -54,46 +54,46 @@ class ChunkingProcessor(ChunkingProcessorInterface):
         """Initialize all chunking strategies."""
         return {
             ContentType.TEXT: SemanticChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
             ContentType.CODE: CodeChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
             ContentType.DOCUMENT: DocumentChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
             ContentType.MEETING: MeetingChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
             ContentType.GIT_COMMIT: GitCommitChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
             ContentType.SLACK_MESSAGE: SlackMessageChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
             ContentType.EMAIL: EmailChunker(
-                self.config.max_chunk_size,
-                self.config.overlap,
-                self.config.min_chunk_size,
-                self.config.preserve_context,
+                max_chunk_size=self.config.max_chunk_size,
+                overlap=self.config.overlap,
+                min_chunk_size=self.config.min_chunk_size,
+                preserve_context=self.config.preserve_context,
             ),
         }
 
@@ -202,7 +202,7 @@ class ChunkingProcessor(ChunkingProcessorInterface):
                 "min_chunk_size": self.config.min_chunk_size,
                 "preserve_context": self.config.preserve_context,
                 "enable_caching": self.config.enable_caching,
-                "enable_enterprise_features": self.config.enable_enterprise_features,
+
             },
             "strategies": {
                 content_type.value: strategy.get_strategy_name()

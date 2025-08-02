@@ -4,7 +4,7 @@ import os
 from typing import Optional
 
 from pydantic import Field, HttpUrl, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigdict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, description="Server port number")
     workers: int = Field(default=1, description="Number of worker processes")
 
-    model_config = SettingsConfigdict(
+    model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,
         env_file_encoding="utf-8",
@@ -141,3 +141,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get a new settings instance for dependency injection."""
     return Settings()
+
+
+# Global settings instance
+settings = Settings()

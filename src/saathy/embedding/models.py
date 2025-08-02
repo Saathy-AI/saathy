@@ -4,7 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Union, dict, list
+from typing import Any, Optional, Union
 
 import numpy as np
 import torch

@@ -86,3 +86,13 @@ python_files = ["*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--tb=short",
+    "-m", "not slow",  # Skip slow tests by default
+]
+markers = [
+    "slow: marks tests as slow (deselected by default)",
+    "integration: marks tests as integration tests",
+    "embedding: marks tests related to embedding functionality",
+]

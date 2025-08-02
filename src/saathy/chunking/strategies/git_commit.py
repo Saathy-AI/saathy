@@ -83,7 +83,7 @@ class GitCommitChunker(BaseChunkingStrategy):
                     content=message,
                     start_index=0,
                     end_index=len(message),
-                    chunk_type="git_commit_message",
+                    chunk_type="git_commit",
                     metadata=metadata,
                 )
             ]
@@ -111,7 +111,7 @@ class GitCommitChunker(BaseChunkingStrategy):
                         content=chunk_content,
                         start_index=start_index,
                         end_index=end_index,
-                        chunk_type="git_commit_message",
+                        chunk_type="git_commit",
                         metadata=metadata,
                     )
                 )
@@ -133,7 +133,7 @@ class GitCommitChunker(BaseChunkingStrategy):
                     content=chunk_content,
                     start_index=start_index,
                     end_index=end_index,
-                    chunk_type="git_commit_message",
+                    chunk_type="git_commit",
                     metadata=metadata,
                 )
             )
@@ -150,7 +150,7 @@ class GitCommitChunker(BaseChunkingStrategy):
                     content=diff,
                     start_index=0,
                     end_index=len(diff),
-                    chunk_type="git_commit_diff",
+                    chunk_type="git_commit",
                     metadata=metadata,
                 )
             ]
@@ -174,7 +174,7 @@ class GitCommitChunker(BaseChunkingStrategy):
                         content=chunk_content,
                         start_index=start,
                         end_index=end,
-                        chunk_type="git_commit_diff",
+                        chunk_type="git_commit",
                         metadata=metadata,
                     )
                 )

@@ -85,7 +85,7 @@ class EmailChunker(BaseChunkingStrategy):
                     content=headers,
                     start_index=0,
                     end_index=len(headers),
-                    chunk_type="email_headers",
+                    chunk_type="email",
                     metadata=metadata,
                 )
             ]
@@ -113,7 +113,7 @@ class EmailChunker(BaseChunkingStrategy):
                         content=chunk_content,
                         start_index=start_index,
                         end_index=end_index,
-                        chunk_type="email_headers",
+                        chunk_type="email",
                         metadata=metadata,
                     )
                 )
@@ -135,7 +135,7 @@ class EmailChunker(BaseChunkingStrategy):
                     content=chunk_content,
                     start_index=start_index,
                     end_index=end_index,
-                    chunk_type="email_headers",
+                    chunk_type="email",
                     metadata=metadata,
                 )
             )
@@ -152,7 +152,7 @@ class EmailChunker(BaseChunkingStrategy):
                     content=body,
                     start_index=0,
                     end_index=len(body),
-                    chunk_type="email_body",
+                    chunk_type="email",
                     metadata=metadata,
                 )
             ]
@@ -180,7 +180,7 @@ class EmailChunker(BaseChunkingStrategy):
                         content=chunk_content,
                         start_index=start_index,
                         end_index=end_index,
-                        chunk_type="email_body",
+                        chunk_type="email",
                         metadata=metadata,
                     )
                 )
@@ -202,7 +202,7 @@ class EmailChunker(BaseChunkingStrategy):
                     content=chunk_content,
                     start_index=start_index,
                     end_index=end_index,
-                    chunk_type="email_body",
+                    chunk_type="email",
                     metadata=metadata,
                 )
             )

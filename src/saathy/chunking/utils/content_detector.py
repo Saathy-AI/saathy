@@ -29,19 +29,22 @@ class ContentTypeDetector(ContentTypeDetectorInterface):
                 r"^Introduction\s*:",  # Document sections
             ],
             ContentType.MEETING: [
-                r"^\w+:\s*",  # Speaker format
-                r"^\[(\w+)\]\s*",  # Bracket speaker format
+                r"^[A-Z][a-z]+:\s*",  # Speaker format (capitalized names)
+                r"^\[([A-Z][a-z]+)\]\s*",  # Bracket speaker format
                 r"\[\d{2}:\d{2}:\d{2}\]",  # Timestamps
                 r"Meeting\s+Transcript",  # Meeting indicators
                 r"Participants:",  # Meeting metadata
+                r"^[A-Z][a-z]+\s+[A-Z][a-z]+:\s*",  # Full name speaker format
             ],
             ContentType.GIT_COMMIT: [
                 r"^commit\s+[a-f0-9]{40}",  # Git commit hash
                 r"^Author:\s+",  # Git author
                 r"^Date:\s+",  # Git date
                 r"^diff\s+--git",  # Git diff
-                r"^---\s+a/",  # Git diff markers
-                r"^+++\s+b/",  # Git diff markers
+                r"^-{3}\s+a/",  # Git diff markers
+                r"^\+\+\+\s+b/",  # Git diff markers
+                r"^index\s+[a-f0-9]+\.\.[a-f0-9]+",  # Git index
+                r"^@@\s+-\d+,\d+\s+\+\d+,\d+\s+@@",  # Git diff hunks
             ],
             ContentType.SLACK_MESSAGE: [
                 r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}",  # Slack timestamps
@@ -69,16 +72,23 @@ class ContentTypeDetector(ContentTypeDetectorInterface):
             if extension_type != ContentType.UNKNOWN:
                 return extension_type.value
 
-        # Check content patterns
-        content_lower = content.lower()
         scores = {content_type: 0 for content_type in ContentType}
 
+        # Define pattern weights (higher = more specific/important)
+        pattern_weights = {
+            ContentType.GIT_COMMIT: 3,  # Very specific patterns
+            ContentType.EMAIL: 3,       # Very specific patterns
+            ContentType.SLACK_MESSAGE: 2,  # Specific patterns
+            ContentType.CODE: 2,        # Specific patterns
+            ContentType.DOCUMENT: 1,    # General patterns
+            ContentType.MEETING: 1,     # General patterns
+        }
+
         for content_type, patterns in self.type_patterns.items():
+            weight = pattern_weights.get(content_type, 1)
             for pattern in patterns:
-                if pattern in content_lower or any(
-                    re.search(pattern, content, re.MULTILINE)
-                ):
-                    scores[content_type] += 1
+                if re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
+                    scores[content_type] += weight
 
         # Return type with highest score
         best_type = max(scores.items(), key=lambda x: x[1])
