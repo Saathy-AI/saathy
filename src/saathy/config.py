@@ -53,6 +53,16 @@ class Settings(BaseSettings):
         default="", description="Comma-separated list of repositories to monitor"
     )
 
+    # Slack connector settings
+    slack_bot_token: Optional[SecretStr] = Field(
+        default=None, description="Slack bot token (xoxb-...)"
+    )
+    slack_app_token: Optional[SecretStr] = Field(
+        default=None, description="Slack app-level token (xapp-...)"
+    )
+    slack_channels: str = Field(
+        default="", description="Comma-separated list of Slack channel IDs to monitor"
+    )
 
     # Embedding settings
     default_embedding_model: str = Field(
@@ -157,7 +167,11 @@ class Settings(BaseSettings):
             return file_secret
 
         # Fall back to environment variable
-        return self.github_webhook_secret.get_secret_value() if self.github_webhook_secret else None
+        return (
+            self.github_webhook_secret.get_secret_value()
+            if self.github_webhook_secret
+            else None
+        )
 
     @property
     def github_token_str(self) -> Optional[str]:
@@ -169,6 +183,28 @@ class Settings(BaseSettings):
 
         # Fall back to environment variable
         return self.github_token.get_secret_value() if self.github_token else None
+
+    @property
+    def slack_bot_token_str(self) -> Optional[str]:
+        """Get Slack bot token as string if available."""
+        # First try to read from file
+        file_secret = self._read_secret_from_file("SLACK_BOT_TOKEN")
+        if file_secret:
+            return file_secret
+
+        # Fall back to environment variable
+        return self.slack_bot_token.get_secret_value() if self.slack_bot_token else None
+
+    @property
+    def slack_app_token_str(self) -> Optional[str]:
+        """Get Slack app token as string if available."""
+        # First try to read from file
+        file_secret = self._read_secret_from_file("SLACK_APP_TOKEN")
+        if file_secret:
+            return file_secret
+
+        # Fall back to environment variable
+        return self.slack_app_token.get_secret_value() if self.slack_app_token else None
 
 
 def get_settings() -> Settings:

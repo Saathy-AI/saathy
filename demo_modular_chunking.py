@@ -4,7 +4,7 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 from saathy.chunking import (
     ChunkAnalyzer,
@@ -31,7 +31,7 @@ def demonstrate_modular_architecture():
         overlap=50,
         min_chunk_size=50,
         preserve_context=True,
-        enable_caching=True
+        enable_caching=True,
     )
     print(f"   Configuration: {config}")
 
@@ -76,7 +76,6 @@ def fibonacci(n):
         return n
     return fibonacci(n-1) + fibonacci(n-2)
         """,
-
         "Document": """
 # Machine Learning Fundamentals
 
@@ -87,13 +86,12 @@ Machine learning is a subset of artificial intelligence.
 ### Supervised Learning
 Uses labeled training data.
         """,
-
         "Meeting": """
 Alice: Good morning everyone!
 Bob: Hi Alice! I completed the authentication module.
 Alice: Great! Any blockers?
 Bob: No blockers from my side.
-        """
+        """,
     }
 
     for content_type, content in test_contents.items():
@@ -102,7 +100,9 @@ Bob: No blockers from my side.
         print(f"     Generated {len(chunks)} chunks")
 
         for i, chunk in enumerate(chunks[:2]):  # Show first 2 chunks
-            print(f"     Chunk {i+1}: {len(chunk.content)} chars, Type: {chunk.chunk_type}")
+            print(
+                f"     Chunk {i+1}: {len(chunk.content)} chars, Type: {chunk.chunk_type}"
+            )
 
     # 5. Analysis Tools
     print("\n5. Analysis Tools")
@@ -149,24 +149,29 @@ def demonstrate_extensibility():
         def get_strategy_name(self) -> str:
             return "custom"
 
-        def chunk(self, content: str, metadata: Optional[ChunkMetadata] = None) -> list[Chunk]:
+        def chunk(
+            self, content: str, metadata: Optional[ChunkMetadata] = None
+        ) -> list[Chunk]:
             """Custom chunking logic."""
             # Simple word-based chunking
             words = content.split()
             chunks = []
 
             for i in range(0, len(words), 10):  # 10 words per chunk
-                chunk_words = words[i:i+10]
+                chunk_words = words[i : i + 10]
                 chunk_content = " ".join(chunk_words)
 
                 if chunk_content:
-                    chunks.append(Chunk(
-                        content=chunk_content,
-                        start_index=0,  # Simplified for demo
-                        end_index=len(chunk_content),
-                        chunk_type="custom",
-                        metadata=metadata or ChunkMetadata(content_type=ContentType.TEXT)
-                    ))
+                    chunks.append(
+                        Chunk(
+                            content=chunk_content,
+                            start_index=0,  # Simplified for demo
+                            end_index=len(chunk_content),
+                            chunk_type="custom",
+                            metadata=metadata
+                            or ChunkMetadata(content_type=ContentType.TEXT),
+                        )
+                    )
 
             return chunks
 
@@ -202,7 +207,7 @@ def demonstrate_error_handling():
         invalid_config = ChunkingConfig(
             max_chunk_size=0,  # Invalid
             overlap=100,
-            min_chunk_size=200  # Greater than max_chunk_size
+            min_chunk_size=200,  # Greater than max_chunk_size
         )
         invalid_config.validate()
     except ValidationError as e:
@@ -237,4 +242,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Error during demonstration: {e}")
         import traceback
+
         traceback.print_exc()

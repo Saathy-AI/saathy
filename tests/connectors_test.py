@@ -51,6 +51,7 @@ class TestBaseConnector:
 
     def test_base_connector_initialization(self) -> None:
         """Test BaseConnector initialization."""
+
         # Create a concrete implementation for testing
         class TestConnector(BaseConnector):
             async def start(self) -> None:
@@ -69,6 +70,7 @@ class TestBaseConnector:
 
     async def test_base_connector_health_check(self) -> None:
         """Test BaseConnector health check method."""
+
         class TestConnector(BaseConnector):
             async def start(self) -> None:
                 pass
@@ -99,14 +101,19 @@ class TestGithubConnector:
     @pytest.fixture
     def github_connector(self) -> GithubConnector:
         """Create a GitHub connector instance for testing."""
-        return GithubConnector("test-github", {
-            "token": "test-token",
-            "webhook_secret": "test-secret",
-            "repositories": ["test/repo"],
-        })
+        return GithubConnector(
+            "test-github",
+            {
+                "token": "test-token",
+                "webhook_secret": "test-secret",
+                "repositories": ["test/repo"],
+            },
+        )
 
     @pytest.mark.asyncio
-    async def test_github_connector_start_stop(self, github_connector: GithubConnector) -> None:
+    async def test_github_connector_start_stop(
+        self, github_connector: GithubConnector
+    ) -> None:
         """Test GitHub connector start and stop methods."""
         assert github_connector.status == ConnectorStatus.INACTIVE
 
@@ -117,18 +124,21 @@ class TestGithubConnector:
         assert github_connector.status == ConnectorStatus.INACTIVE
 
     @pytest.mark.asyncio
-    async def test_process_event_without_event_type(self, github_connector: GithubConnector) -> None:
+    async def test_process_event_without_event_type(
+        self, github_connector: GithubConnector
+    ) -> None:
         """Test processing event without event_type."""
         result = await github_connector.process_event({})
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_process_unsupported_event_type(self, github_connector: GithubConnector) -> None:
+    async def test_process_unsupported_event_type(
+        self, github_connector: GithubConnector
+    ) -> None:
         """Test processing unsupported event type."""
-        result = await github_connector.process_event({
-            "event_type": "unsupported_event",
-            "payload": {}
-        })
+        result = await github_connector.process_event(
+            {"event_type": "unsupported_event", "payload": {}}
+        )
         assert result == []
 
     @pytest.mark.asyncio
@@ -148,10 +158,12 @@ class TestGithubConnector:
             "ref": "refs/heads/main",
         }
 
-        result = await github_connector.process_event({
-            "event_type": "push",
-            "payload": payload,
-        })
+        result = await github_connector.process_event(
+            {
+                "event_type": "push",
+                "payload": payload,
+            }
+        )
 
         assert len(result) == 1
         assert result[0].id == "github:push:test/repo:abc123"
@@ -161,7 +173,9 @@ class TestGithubConnector:
         assert result[0].metadata["repository"] == "test/repo"
 
     @pytest.mark.asyncio
-    async def test_process_pull_request_event(self, github_connector: GithubConnector) -> None:
+    async def test_process_pull_request_event(
+        self, github_connector: GithubConnector
+    ) -> None:
         """Test processing pull request event."""
         payload = {
             "repository": {"full_name": "test/repo"},
@@ -178,10 +192,12 @@ class TestGithubConnector:
             "action": "opened",
         }
 
-        result = await github_connector.process_event({
-            "event_type": "pull_request",
-            "payload": payload,
-        })
+        result = await github_connector.process_event(
+            {
+                "event_type": "pull_request",
+                "payload": payload,
+            }
+        )
 
         assert len(result) == 1
         assert result[0].id == "github:pull_request:test/repo:123"
@@ -192,7 +208,9 @@ class TestGithubConnector:
         assert result[0].metadata["user"] == "testuser"
 
     @pytest.mark.asyncio
-    async def test_process_issues_event(self, github_connector: GithubConnector) -> None:
+    async def test_process_issues_event(
+        self, github_connector: GithubConnector
+    ) -> None:
         """Test processing issues event."""
         payload = {
             "repository": {"full_name": "test/repo"},
@@ -209,10 +227,12 @@ class TestGithubConnector:
             "action": "opened",
         }
 
-        result = await github_connector.process_event({
-            "event_type": "issues",
-            "payload": payload,
-        })
+        result = await github_connector.process_event(
+            {
+                "event_type": "issues",
+                "payload": payload,
+            }
+        )
 
         assert len(result) == 1
         assert result[0].id == "github:issue:test/repo:456"
@@ -301,7 +321,9 @@ class TestGithubConnector:
         assert title_item.content_type == ContentType.TEXT
 
         # Check body
-        body_item = next(item for item in result if "body" in item.id and "comment" not in item.id)
+        body_item = next(
+            item for item in result if "body" in item.id and "comment" not in item.id
+        )
         assert body_item.content == "Test PR body content"
         assert body_item.content_type == ContentType.MARKDOWN
 
@@ -351,7 +373,9 @@ class TestGithubConnector:
         assert "high-priority" in title_item.metadata["labels"]
 
         # Check body
-        body_item = next(item for item in result if "body" in item.id and "comment" not in item.id)
+        body_item = next(
+            item for item in result if "body" in item.id and "comment" not in item.id
+        )
         assert body_item.content == "Test issue body content"
         assert body_item.content_type == ContentType.MARKDOWN
 
@@ -381,12 +405,16 @@ class TestContentProcessor:
         return repo
 
     @pytest.fixture
-    def content_processor(self, mock_embedding_service: MagicMock, mock_vector_repo: MagicMock) -> ContentProcessor:
+    def content_processor(
+        self, mock_embedding_service: MagicMock, mock_vector_repo: MagicMock
+    ) -> ContentProcessor:
         """Create a content processor instance for testing."""
         return ContentProcessor(mock_embedding_service, mock_vector_repo)
 
     @pytest.mark.asyncio
-    async def test_process_and_store_empty_list(self, content_processor: ContentProcessor) -> None:
+    async def test_process_and_store_empty_list(
+        self, content_processor: ContentProcessor
+    ) -> None:
         """Test processing empty content list."""
         result = await content_processor.process_and_store([])
 
@@ -397,7 +425,9 @@ class TestContentProcessor:
         assert result["errors"] == []
 
     @pytest.mark.asyncio
-    async def test_process_and_store_text_content(self, content_processor: ContentProcessor) -> None:
+    async def test_process_and_store_text_content(
+        self, content_processor: ContentProcessor
+    ) -> None:
         """Test processing text content."""
         # Setup mock embedding service
         mock_embedding_result = MagicMock()
@@ -406,7 +436,9 @@ class TestContentProcessor:
         mock_embedding_result.processing_time = 0.1
         mock_embedding_result.quality_score = 0.9
 
-        content_processor.embedding_service.embed_text.return_value = mock_embedding_result
+        content_processor.embedding_service.embed_text.return_value = (
+            mock_embedding_result
+        )
 
         # Create test content
         content_items = [
@@ -461,7 +493,9 @@ class TestContentProcessor:
         assert call_args[0].metadata["embedding_model"] == "test-model"
 
     @pytest.mark.asyncio
-    async def test_process_and_store_code_content(self, content_processor: ContentProcessor) -> None:
+    async def test_process_and_store_code_content(
+        self, content_processor: ContentProcessor
+    ) -> None:
         """Test processing code content."""
         # Setup mock embedding service
         mock_embedding_result = MagicMock()
@@ -470,7 +504,9 @@ class TestContentProcessor:
         mock_embedding_result.processing_time = 0.2
         mock_embedding_result.quality_score = 0.8
 
-        content_processor.embedding_service.embed_code.return_value = mock_embedding_result
+        content_processor.embedding_service.embed_code.return_value = (
+            mock_embedding_result
+        )
 
         # Create test content
         content_items = [
@@ -498,10 +534,14 @@ class TestContentProcessor:
         )
 
     @pytest.mark.asyncio
-    async def test_process_and_store_embedding_failure(self, content_processor: ContentProcessor) -> None:
+    async def test_process_and_store_embedding_failure(
+        self, content_processor: ContentProcessor
+    ) -> None:
         """Test handling embedding service failures."""
         # Setup mock embedding service to fail
-        content_processor.embedding_service.embed_text.side_effect = Exception("Embedding failed")
+        content_processor.embedding_service.embed_text.side_effect = Exception(
+            "Embedding failed"
+        )
 
         content_items = [
             ProcessedContent(
@@ -524,7 +564,9 @@ class TestContentProcessor:
         assert "Failed to process content item test-1" in result["errors"][0]
 
     @pytest.mark.asyncio
-    async def test_process_and_store_vector_repo_failure(self, content_processor: ContentProcessor) -> None:
+    async def test_process_and_store_vector_repo_failure(
+        self, content_processor: ContentProcessor
+    ) -> None:
         """Test handling vector repository failures."""
         # Setup mock embedding service
         mock_embedding_result = MagicMock()
@@ -533,10 +575,14 @@ class TestContentProcessor:
         mock_embedding_result.processing_time = 0.1
         mock_embedding_result.quality_score = 0.9
 
-        content_processor.embedding_service.embed_text.return_value = mock_embedding_result
+        content_processor.embedding_service.embed_text.return_value = (
+            mock_embedding_result
+        )
 
         # Setup mock vector repository to fail
-        content_processor.vector_repo.upsert_vectors.side_effect = Exception("Vector repo failed")
+        content_processor.vector_repo.upsert_vectors.side_effect = Exception(
+            "Vector repo failed"
+        )
 
         content_items = [
             ProcessedContent(
@@ -559,7 +605,9 @@ class TestContentProcessor:
         assert "Failed to store documents in vector repository" in result["errors"][0]
 
     @pytest.mark.asyncio
-    async def test_process_and_store_mixed_content_types(self, content_processor: ContentProcessor) -> None:
+    async def test_process_and_store_mixed_content_types(
+        self, content_processor: ContentProcessor
+    ) -> None:
         """Test processing mixed content types."""
         # Setup mock embedding service
         text_embedding_result = MagicMock()
@@ -574,8 +622,12 @@ class TestContentProcessor:
         code_embedding_result.processing_time = 0.2
         code_embedding_result.quality_score = 0.8
 
-        content_processor.embedding_service.embed_text.return_value = text_embedding_result
-        content_processor.embedding_service.embed_code.return_value = code_embedding_result
+        content_processor.embedding_service.embed_text.return_value = (
+            text_embedding_result
+        )
+        content_processor.embedding_service.embed_code.return_value = (
+            code_embedding_result
+        )
 
         # Create test content with mixed types
         content_items = [

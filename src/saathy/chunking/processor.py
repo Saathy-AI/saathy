@@ -202,7 +202,6 @@ class ChunkingProcessor(ChunkingProcessorInterface):
                 "min_chunk_size": self.config.min_chunk_size,
                 "preserve_context": self.config.preserve_context,
                 "enable_caching": self.config.enable_caching,
-
             },
             "strategies": {
                 content_type.value: strategy.get_strategy_name()
@@ -235,5 +234,3 @@ class ChunkingProcessor(ChunkingProcessorInterface):
             content_type.value: strategy.get_strategy_name()
             for content_type, strategy in self.strategies.items()
         }
-
-

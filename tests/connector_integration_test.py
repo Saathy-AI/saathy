@@ -178,7 +178,9 @@ class TestConnectorIntegration:
         assert title_item.metadata["user"] == "testuser"
 
         # Check body
-        body_item = next(item for item in extracted if "body" in item.id and "comment" not in item.id)
+        body_item = next(
+            item for item in extracted if "body" in item.id and "comment" not in item.id
+        )
         assert body_item.content == "This PR adds a new feature to the application."
         assert body_item.content_type == ContentType.MARKDOWN
         assert body_item.metadata["pr_number"] == 123
@@ -221,7 +223,9 @@ class TestConnectorIntegration:
         assert title_item.metadata["user"] == "reporter"
 
         # Check body
-        body_item = next(item for item in extracted if "body" in item.id and "comment" not in item.id)
+        body_item = next(
+            item for item in extracted if "body" in item.id and "comment" not in item.id
+        )
         assert body_item.content == "There is a bug in the application."
         assert body_item.content_type == ContentType.MARKDOWN
         assert body_item.metadata["issue_number"] == 789
@@ -236,11 +240,14 @@ class TestConnectorIntegration:
     @pytest.mark.asyncio
     async def test_connector_lifecycle(self) -> None:
         """Test connector lifecycle (start/stop/health check)."""
-        connector = GithubConnector("test-github", {
-            "token": "test-token",
-            "webhook_secret": "test-secret",
-            "repositories": ["test/repo"],
-        })
+        connector = GithubConnector(
+            "test-github",
+            {
+                "token": "test-token",
+                "webhook_secret": "test-secret",
+                "repositories": ["test/repo"],
+            },
+        )
 
         # Initial state
         assert connector.name == "test-github"
@@ -275,10 +282,7 @@ class TestConnectorIntegration:
         """Test handling of unsupported event types."""
         connector = GithubConnector("test-github", {})
 
-        event_data = {
-            "event_type": "unsupported_event",
-            "payload": {"test": "data"}
-        }
+        event_data = {"event_type": "unsupported_event", "payload": {"test": "data"}}
 
         # This should return an empty list for unsupported events
         result = await connector.process_event(event_data)

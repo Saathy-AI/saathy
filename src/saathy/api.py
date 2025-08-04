@@ -5,20 +5,33 @@ import hmac
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Union
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 
 from saathy import __version__
 from saathy.config import Settings, get_settings
-from saathy.connectors import ContentProcessor, GithubConnector
+from saathy.connectors import GithubConnector, SlackConnector
+from saathy.connectors.content_processor import ContentProcessor
 from saathy.embedding.service import EmbeddingService, get_embedding_service
 from saathy.vector.client import QdrantClientWrapper
 from saathy.vector.repository import VectorRepository
 
 # In-memory dictionary to hold settings during the application's lifespan.
 # This is a simple approach; for more complex scenarios, consider using a more robust solution.
-app_state: dict[str, Union[Settings, VectorRepository, EmbeddingService, GithubConnector, ContentProcessor, None]] = {}
+app_state: dict[
+    str,
+    Union[
+        Settings,
+        VectorRepository,
+        EmbeddingService,
+        GithubConnector,
+        SlackConnector,
+        ContentProcessor,
+        None,
+    ],
+] = {}
 
 
 @asynccontextmanager
@@ -55,6 +68,51 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             "Provide GITHUB_WEBHOOK_SECRET and GITHUB_TOKEN to enable it."
         )
 
+    # Initialize Slack connector if configured
+    if settings.slack_bot_token_str:
+        logging.info("Slack connector is configured, initializing.")
+        slack_config = {
+            "bot_token": settings.slack_bot_token_str,
+            "channels": [
+                ch.strip() for ch in settings.slack_channels.split(",") if ch.strip()
+            ]
+            if settings.slack_channels
+            else [],
+        }
+
+        try:
+            slack_connector = SlackConnector(config=slack_config)
+
+            # Initialize content processor and connect it to Slack connector
+            embedding_service = app_state.get("embedding_service")
+            if embedding_service:
+                vector_repo = get_vector_repo()
+                content_processor = ContentProcessor(embedding_service, vector_repo)
+                slack_connector.set_content_processor(content_processor)
+                app_state["content_processor"] = content_processor
+                logging.info(
+                    "Content processor initialized and connected to Slack connector."
+                )
+            else:
+                logging.warning(
+                    "Embedding service not available, content processing disabled."
+                )
+
+            await slack_connector.start()
+            app_state["slack_connector"] = slack_connector
+            logging.info("Slack connector initialized and started successfully.")
+        except Exception as e:
+            app_state["slack_connector"] = None
+            app_state["content_processor"] = None
+            logging.error(f"Failed to initialize Slack connector: {e}")
+    else:
+        app_state["slack_connector"] = None
+        app_state["content_processor"] = None
+        logging.warning(
+            "Slack connector not configured. Skipping initialization. "
+            "Provide SLACK_BOT_TOKEN to enable it."
+        )
+
     # Initialize embedding service
     try:
         embedding_service = await get_embedding_service()
@@ -71,6 +129,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if isinstance(github_connector, GithubConnector):
         logging.info("Shutting down GitHub connector.")
         await github_connector.stop()
+
+    slack_connector = app_state.get("slack_connector")
+    if isinstance(slack_connector, SlackConnector):
+        logging.info("Shutting down Slack connector.")
+        await slack_connector.stop()
 
     app_state.clear()
 
@@ -119,26 +182,6 @@ def get_vector_repo() -> VectorRepository:
     return app_state["vector_repo"]
 
 
-def get_content_processor() -> ContentProcessor:
-    """Get the content processor from application state, creating it if needed."""
-    if app_state.get("content_processor") is None:
-        embedding_service = app_state.get("embedding_service")
-        vector_repo = get_vector_repo()
-
-        if not embedding_service:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Embedding service is not available.",
-            )
-
-        app_state["content_processor"] = ContentProcessor(
-            embedding_service=embedding_service,
-            vector_repo=vector_repo,
-        )
-
-    return app_state["content_processor"]
-
-
 def get_github_connector() -> GithubConnector:
     """Get the GitHub connector from application state, raising an error if unavailable."""
     github_connector = app_state.get("github_connector")
@@ -148,6 +191,28 @@ def get_github_connector() -> GithubConnector:
             detail="GitHub connector is not configured or available.",
         )
     return github_connector
+
+
+def get_slack_connector() -> SlackConnector:
+    """Get the Slack connector from application state, raising an error if unavailable."""
+    slack_connector = app_state.get("slack_connector")
+    if not isinstance(slack_connector, SlackConnector):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Slack connector is not configured or available.",
+        )
+    return slack_connector
+
+
+def get_content_processor() -> ContentProcessor:
+    """Get the content processor from application state, raising an error if unavailable."""
+    content_processor = app_state.get("content_processor")
+    if not isinstance(content_processor, ContentProcessor):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Content processor is not configured or available.",
+        )
+    return content_processor
 
 
 @app.get("/healthz")
@@ -195,6 +260,7 @@ async def get_config(settings: Settings = Depends(get_settings)) -> dict[str, st
 
 # --- GitHub Connector Endpoints ---
 
+
 @app.post("/webhooks/github")
 async def github_webhook(
     request: Request,
@@ -217,9 +283,12 @@ async def github_webhook(
         )
 
     body = await request.body()
-    expected_signature = "sha256=" + hmac.new(
-        settings.github_webhook_secret_str.encode("utf-8"), body, hashlib.sha256
-    ).hexdigest()
+    expected_signature = (
+        "sha256="
+        + hmac.new(
+            settings.github_webhook_secret_str.encode("utf-8"), body, hashlib.sha256
+        ).hexdigest()
+    )
 
     if not hmac.compare_digest(signature_header, expected_signature):
         raise HTTPException(
@@ -265,7 +334,11 @@ async def github_webhook(
         return {
             "status": "ok",
             "event": event_type,
-            "processing_result": {"total_items": 0, "processed_items": 0, "failed_items": 0},
+            "processing_result": {
+                "total_items": 0,
+                "processed_items": 0,
+                "failed_items": 0,
+            },
         }
 
 
@@ -294,3 +367,153 @@ async def github_manual_sync(
     )
     # In a real implementation, this would trigger the sync logic.
     return {"message": "Manual sync acknowledged. Feature is under development."}
+
+
+# --- Slack Connector Endpoints ---
+
+
+@app.get("/connectors/slack/status")
+async def slack_connector_status(
+    slack_connector: SlackConnector = Depends(get_slack_connector),
+):
+    """Return connector health, status, and basic metrics."""
+    try:
+        is_healthy = await slack_connector.health_check()
+
+        return {
+            "status": slack_connector.status.value,
+            "name": "slack",
+            "uptime": "N/A",  # TODO: Add uptime tracking
+            "last_message": "N/A",  # TODO: Add message tracking
+            "channels_monitored": slack_connector.channels,
+            "messages_processed": 0,  # TODO: Add message counter
+            "connection_healthy": is_healthy,
+            "config": {"channels": slack_connector.channels, "auto_start": True},
+        }
+    except Exception as e:
+        logging.error(f"Error getting Slack connector status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get Slack connector status.",
+        ) from e
+
+
+@app.post("/connectors/slack/start")
+async def start_slack_connector(
+    slack_connector: SlackConnector = Depends(get_slack_connector),
+):
+    """Start the connector if not running."""
+    try:
+        if slack_connector.status.value == "active":
+            return {"message": "Slack connector is already running."}
+
+        await slack_connector.start()
+        logging.info("Slack connector started successfully via API.")
+        return {"message": "Slack connector started successfully."}
+    except Exception as e:
+        logging.error(f"Error starting Slack connector: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to start Slack connector.",
+        ) from e
+
+
+@app.post("/connectors/slack/stop")
+async def stop_slack_connector(
+    slack_connector: SlackConnector = Depends(get_slack_connector),
+):
+    """Stop the connector if running."""
+    try:
+        if slack_connector.status.value == "inactive":
+            return {"message": "Slack connector is already stopped."}
+
+        await slack_connector.stop()
+        logging.info("Slack connector stopped successfully via API.")
+        return {"message": "Slack connector stopped successfully."}
+    except Exception as e:
+        logging.error(f"Error stopping Slack connector: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to stop Slack connector.",
+        ) from e
+
+
+@app.get("/connectors/slack/channels")
+async def get_slack_channels(
+    slack_connector: SlackConnector = Depends(get_slack_connector),
+):
+    """List available channels from Slack workspace."""
+    try:
+        if not slack_connector.web_client:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Slack web client is not available.",
+            )
+
+        # Get list of channels
+        response = await slack_connector.web_client.conversations_list(
+            types="public_channel,private_channel"
+        )
+
+        if not response.get("ok"):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch channels from Slack.",
+            )
+
+        channels = []
+        for channel in response.get("channels", []):
+            channels.append(
+                {
+                    "id": channel.get("id"),
+                    "name": channel.get("name"),
+                    "is_private": channel.get("is_private", False),
+                    "is_member": channel.get("is_member", False),
+                    "num_members": channel.get("num_members", 0),
+                }
+            )
+
+        return {
+            "channels": channels,
+            "total": len(channels),
+            "monitored_channels": slack_connector.channels,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error fetching Slack channels: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch Slack channels.",
+        ) from e
+
+
+@app.post("/connectors/slack/process")
+async def process_slack_content(
+    message: str,
+    channel_id: str = "manual",
+    content_processor: ContentProcessor = Depends(get_content_processor),
+):
+    """Manually process a Slack message."""
+    from saathy.connectors.base import ContentType, ProcessedContent
+
+    # Create mock ProcessedContent
+    content = ProcessedContent(
+        id=f"manual_{channel_id}_{datetime.now().timestamp()}",
+        content=message,
+        content_type=ContentType.TEXT,
+        source="slack_manual",
+        metadata={
+            "source": "slack",
+            "channel_id": channel_id,
+            "channel_name": "manual",
+            "user_id": "manual",
+            "timestamp": str(datetime.now().timestamp()),
+            "is_thread_reply": False,
+        },
+        timestamp=datetime.now(),
+        raw_data={"text": message, "channel": channel_id},
+    )
+
+    result = await content_processor.process_and_store([content])
+    return result

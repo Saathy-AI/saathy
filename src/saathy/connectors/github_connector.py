@@ -52,11 +52,15 @@ class GithubConnector(BaseConnector):
                 logger.debug(f"Ignoring unsupported GitHub event type: {event_type}")
                 return []
         except Exception as e:
-            logger.error(f"Error processing GitHub event '{event_type}': {e}", exc_info=True)
+            logger.error(
+                f"Error processing GitHub event '{event_type}': {e}", exc_info=True
+            )
             self.status = ConnectorStatus.ERROR
             return []
 
-    async def _process_push_event(self, payload: dict[str, Any]) -> list[ProcessedContent]:
+    async def _process_push_event(
+        self, payload: dict[str, Any]
+    ) -> list[ProcessedContent]:
         """Process a 'push' event."""
         processed_items = []
         repo_name = payload.get("repository", {}).get("full_name")
@@ -76,14 +80,20 @@ class GithubConnector(BaseConnector):
                         "repository": repo_name,
                         "ref": payload.get("ref"),
                     },
-                    timestamp=datetime.fromisoformat(commit.get("timestamp")) if commit.get("timestamp") else datetime.utcnow(),
+                    timestamp=datetime.fromisoformat(commit.get("timestamp"))
+                    if commit.get("timestamp")
+                    else datetime.utcnow(),
                     raw_data=commit,
                 )
             )
-        logger.info(f"Processed {len(processed_items)} commits from push event for {repo_name}.")
+        logger.info(
+            f"Processed {len(processed_items)} commits from push event for {repo_name}."
+        )
         return processed_items
 
-    async def _process_pull_request_event(self, payload: dict[str, Any]) -> list[ProcessedContent]:
+    async def _process_pull_request_event(
+        self, payload: dict[str, Any]
+    ) -> list[ProcessedContent]:
         """Process a 'pull_request' event."""
         pr = payload.get("pull_request", {})
         repo_name = payload.get("repository", {}).get("full_name")
@@ -108,13 +118,19 @@ class GithubConnector(BaseConnector):
                 "number": pr.get("number"),
                 "state": pr.get("state"),
             },
-            timestamp=datetime.fromisoformat(pr.get("updated_at")) if pr.get("updated_at") else datetime.utcnow(),
+            timestamp=datetime.fromisoformat(pr.get("updated_at"))
+            if pr.get("updated_at")
+            else datetime.utcnow(),
             raw_data=payload,
         )
-        logger.info(f"Processed pull request event: {action} for {repo_name} #{pr.get('number')}.")
+        logger.info(
+            f"Processed pull request event: {action} for {repo_name} #{pr.get('number')}."
+        )
         return [processed_item]
 
-    async def _process_issues_event(self, payload: dict[str, Any]) -> list[ProcessedContent]:
+    async def _process_issues_event(
+        self, payload: dict[str, Any]
+    ) -> list[ProcessedContent]:
         """Process an 'issues' event."""
         issue = payload.get("issue", {})
         repo_name = payload.get("repository", {}).get("full_name")
@@ -139,13 +155,19 @@ class GithubConnector(BaseConnector):
                 "number": issue.get("number"),
                 "state": issue.get("state"),
             },
-            timestamp=datetime.fromisoformat(issue.get("updated_at")) if issue.get("updated_at") else datetime.utcnow(),
+            timestamp=datetime.fromisoformat(issue.get("updated_at"))
+            if issue.get("updated_at")
+            else datetime.utcnow(),
             raw_data=payload,
         )
-        logger.info(f"Processed issue event: {action} for {repo_name} #{issue.get('number')}.")
+        logger.info(
+            f"Processed issue event: {action} for {repo_name} #{issue.get('number')}."
+        )
         return [processed_item]
 
-    def extract_commit_content(self, commit_data: dict[str, Any]) -> list[ProcessedContent]:
+    def extract_commit_content(
+        self, commit_data: dict[str, Any]
+    ) -> list[ProcessedContent]:
         """Extract content from commit events."""
         processed_items = []
         repo_name = commit_data.get("repository", {}).get("full_name", "unknown")
@@ -171,10 +193,14 @@ class GithubConnector(BaseConnector):
                             "author": commit.get("author", {}).get("name"),
                             "author_email": commit.get("author", {}).get("email"),
                             "ref": commit_data.get("ref"),
-                            "branch": commit_data.get("ref", "").replace("refs/heads/", ""),
+                            "branch": commit_data.get("ref", "").replace(
+                                "refs/heads/", ""
+                            ),
                             "timestamp": commit.get("timestamp"),
                         },
-                        timestamp=datetime.fromisoformat(commit.get("timestamp")) if commit.get("timestamp") else datetime.utcnow(),
+                        timestamp=datetime.fromisoformat(commit.get("timestamp"))
+                        if commit.get("timestamp")
+                        else datetime.utcnow(),
                         raw_data=commit,
                     )
                 )
@@ -196,7 +222,9 @@ class GithubConnector(BaseConnector):
                             "author": commit.get("author", {}).get("name"),
                             "ref": commit_data.get("ref"),
                         },
-                        timestamp=datetime.fromisoformat(commit.get("timestamp")) if commit.get("timestamp") else datetime.utcnow(),
+                        timestamp=datetime.fromisoformat(commit.get("timestamp"))
+                        if commit.get("timestamp")
+                        else datetime.utcnow(),
                         raw_data={"commit": commit, "file": file_change},
                     )
                 )
@@ -217,12 +245,16 @@ class GithubConnector(BaseConnector):
                             "author": commit.get("author", {}).get("name"),
                             "ref": commit_data.get("ref"),
                         },
-                        timestamp=datetime.fromisoformat(commit.get("timestamp")) if commit.get("timestamp") else datetime.utcnow(),
+                        timestamp=datetime.fromisoformat(commit.get("timestamp"))
+                        if commit.get("timestamp")
+                        else datetime.utcnow(),
                         raw_data={"commit": commit, "file": file_change},
                     )
                 )
 
-        logger.info(f"Extracted {len(processed_items)} content items from commit data for {repo_name}")
+        logger.info(
+            f"Extracted {len(processed_items)} content items from commit data for {repo_name}"
+        )
         return processed_items
 
     def extract_pr_content(self, pr_data: dict[str, Any]) -> list[ProcessedContent]:
@@ -257,7 +289,9 @@ class GithubConnector(BaseConnector):
                         "user": pr.get("user", {}).get("login"),
                         "title": title,
                     },
-                    timestamp=datetime.fromisoformat(pr.get("updated_at")) if pr.get("updated_at") else datetime.utcnow(),
+                    timestamp=datetime.fromisoformat(pr.get("updated_at"))
+                    if pr.get("updated_at")
+                    else datetime.utcnow(),
                     raw_data=pr,
                 )
             )
@@ -279,7 +313,9 @@ class GithubConnector(BaseConnector):
                         "user": pr.get("user", {}).get("login"),
                         "title": title,
                     },
-                    timestamp=datetime.fromisoformat(pr.get("updated_at")) if pr.get("updated_at") else datetime.utcnow(),
+                    timestamp=datetime.fromisoformat(pr.get("updated_at"))
+                    if pr.get("updated_at")
+                    else datetime.utcnow(),
                     raw_data=pr,
                 )
             )
@@ -303,15 +339,21 @@ class GithubConnector(BaseConnector):
                             "user": comment.get("user", {}).get("login"),
                             "created_at": comment.get("created_at"),
                         },
-                        timestamp=datetime.fromisoformat(comment.get("created_at")) if comment.get("created_at") else datetime.utcnow(),
+                        timestamp=datetime.fromisoformat(comment.get("created_at"))
+                        if comment.get("created_at")
+                        else datetime.utcnow(),
                         raw_data=comment,
                     )
                 )
 
-        logger.info(f"Extracted {len(processed_items)} content items from PR data for {repo_name} #{pr_number}")
+        logger.info(
+            f"Extracted {len(processed_items)} content items from PR data for {repo_name} #{pr_number}"
+        )
         return processed_items
 
-    def extract_issue_content(self, issue_data: dict[str, Any]) -> list[ProcessedContent]:
+    def extract_issue_content(
+        self, issue_data: dict[str, Any]
+    ) -> list[ProcessedContent]:
         """Extract content from issue events."""
         processed_items = []
         issue = issue_data.get("issue", {})
@@ -341,10 +383,14 @@ class GithubConnector(BaseConnector):
                         "action": issue_data.get("action"),
                         "state": issue.get("state"),
                         "user": issue.get("user", {}).get("login"),
-                        "labels": [label.get("name") for label in issue.get("labels", [])],
+                        "labels": [
+                            label.get("name") for label in issue.get("labels", [])
+                        ],
                         "title": title,
                     },
-                    timestamp=datetime.fromisoformat(issue.get("updated_at")) if issue.get("updated_at") else datetime.utcnow(),
+                    timestamp=datetime.fromisoformat(issue.get("updated_at"))
+                    if issue.get("updated_at")
+                    else datetime.utcnow(),
                     raw_data=issue,
                 )
             )
@@ -364,10 +410,14 @@ class GithubConnector(BaseConnector):
                         "action": issue_data.get("action"),
                         "state": issue.get("state"),
                         "user": issue.get("user", {}).get("login"),
-                        "labels": [label.get("name") for label in issue.get("labels", [])],
+                        "labels": [
+                            label.get("name") for label in issue.get("labels", [])
+                        ],
                         "title": title,
                     },
-                    timestamp=datetime.fromisoformat(issue.get("updated_at")) if issue.get("updated_at") else datetime.utcnow(),
+                    timestamp=datetime.fromisoformat(issue.get("updated_at"))
+                    if issue.get("updated_at")
+                    else datetime.utcnow(),
                     raw_data=issue,
                 )
             )
@@ -391,10 +441,14 @@ class GithubConnector(BaseConnector):
                             "user": comment.get("user", {}).get("login"),
                             "created_at": comment.get("created_at"),
                         },
-                        timestamp=datetime.fromisoformat(comment.get("created_at")) if comment.get("created_at") else datetime.utcnow(),
+                        timestamp=datetime.fromisoformat(comment.get("created_at"))
+                        if comment.get("created_at")
+                        else datetime.utcnow(),
                         raw_data=comment,
                     )
                 )
 
-        logger.info(f"Extracted {len(processed_items)} content items from issue data for {repo_name} #{issue_number}")
+        logger.info(
+            f"Extracted {len(processed_items)} content items from issue data for {repo_name} #{issue_number}"
+        )
         return processed_items

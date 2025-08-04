@@ -30,11 +30,14 @@ def sample_processed_content() -> ProcessedContent:
 @pytest.fixture
 def sample_github_connector() -> GithubConnector:
     """Create a sample GitHub connector for testing."""
-    return GithubConnector("test-github", {
-        "token": "test-token",
-        "webhook_secret": "test-secret",
-        "repositories": ["test/repo"],
-    })
+    return GithubConnector(
+        "test-github",
+        {
+            "token": "test-token",
+            "webhook_secret": "test-secret",
+            "repositories": ["test/repo"],
+        },
+    )
 
 
 @pytest.fixture

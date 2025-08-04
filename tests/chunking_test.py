@@ -195,7 +195,9 @@ class TestContentTypeDetection:
 
         # Test meeting detection
         meeting_content = "Alice: Hello\nBob: Hi"
-        assert detector.detect_content_type(meeting_content) == ContentType.MEETING.value
+        assert (
+            detector.detect_content_type(meeting_content) == ContentType.MEETING.value
+        )
 
         # Test git commit detection
         git_content = "commit abc123\nAuthor: John Doe"
@@ -203,7 +205,10 @@ class TestContentTypeDetection:
 
         # Test Slack message detection
         slack_content = "2024-01-01 12:00:00 Alice: Hello"
-        assert detector.detect_content_type(slack_content) == ContentType.SLACK_MESSAGE.value
+        assert (
+            detector.detect_content_type(slack_content)
+            == ContentType.SLACK_MESSAGE.value
+        )
 
         # Test email detection
         email_content = "From: sender@example.com\nTo: recipient@example.com"

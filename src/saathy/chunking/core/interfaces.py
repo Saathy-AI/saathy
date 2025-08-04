@@ -20,7 +20,6 @@ class ChunkingConfig:
     parallel_processing: bool = False
     max_workers: int = 4
 
-
     def validate(self) -> None:
         """Validate configuration parameters."""
         if self.max_chunk_size <= 0:
@@ -178,6 +177,3 @@ class ChunkCache(ABC):
     def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         pass
-
-
-

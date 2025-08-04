@@ -8,6 +8,7 @@ from pathlib import Path
 src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
+
 def main():
     """Demonstrate the simplified chunking system."""
     print("🚀 Saathy Intelligent Chunking System Demo")
@@ -19,6 +20,7 @@ def main():
             ChunkingConfig,
             ChunkingProcessor,
         )
+
         print("✅ Successfully imported chunking system")
 
         # Create a processor with default configuration
@@ -41,7 +43,9 @@ def main():
         print(f"Input text length: {len(text)} characters")
         print(f"Generated {len(chunks)} chunks:")
         for i, chunk in enumerate(chunks[:3], 1):  # Show first 3 chunks
-            print(f"  Chunk {i}: {len(chunk.content)} chars - '{chunk.content[:50]}...'")
+            print(
+                f"  Chunk {i}: {len(chunk.content)} chars - '{chunk.content[:50]}...'"
+            )
 
         # Demo 2: Code chunking
         print("\n💻 Demo 2: Code Chunking")
@@ -73,17 +77,17 @@ class MathUtils:
         for i, chunk in enumerate(code_chunks, 1):
             print(f"  Code chunk {i}: {len(chunk.content)} chars")
             # Show first few lines of each chunk
-            lines = chunk.content.strip().split('\n')[:2]
+            lines = chunk.content.strip().split("\n")[:2]
             for line in lines:
                 if line.strip():
                     print(f"    {line}")
-            if len(chunk.content.strip().split('\n')) > 2:
+            if len(chunk.content.strip().split("\n")) > 2:
                 print("    ...")
 
         # Demo 3: Document chunking
         print("\n📄 Demo 3: Document Chunking")
         print("-" * 28)
-        document = '''
+        document = """
 # Machine Learning Guide
 
 ## Introduction
@@ -104,12 +108,12 @@ Reinforcement learning learns through interaction with an environment.
 ## Conclusion
 
 Machine learning continues to evolve and find new applications across industries.
-'''
+"""
 
         doc_chunks = processor.chunk_content(document.strip(), content_type="document")
         print(f"Generated {len(doc_chunks)} document chunks:")
         for i, chunk in enumerate(doc_chunks, 1):
-            first_line = chunk.content.strip().split('\n')[0]
+            first_line = chunk.content.strip().split("\n")[0]
             print(f"  Doc chunk {i}: '{first_line}' ({len(chunk.content)} chars)")
 
         # Demo 4: Strategy configuration
@@ -119,13 +123,15 @@ Machine learning continues to evolve and find new applications across industries
         # Create processor with custom config
         config = ChunkingConfig(
             max_chunk_size=200,  # Smaller chunks
-            overlap=25,          # Less overlap
-            min_chunk_size=20    # Smaller minimum
+            overlap=25,  # Less overlap
+            min_chunk_size=20,  # Smaller minimum
         )
         custom_processor = ChunkingProcessor(config)
 
         custom_chunks = custom_processor.chunk_content(text.strip())
-        print(f"With custom config: {len(custom_chunks)} chunks (vs {len(chunks)} with default)")
+        print(
+            f"With custom config: {len(custom_chunks)} chunks (vs {len(chunks)} with default)"
+        )
 
         # Demo 5: Available strategies
         print("\n🎯 Demo 5: Available Strategies")
@@ -146,10 +152,12 @@ Machine learning continues to evolve and find new applications across industries
     except Exception as e:
         print(f"❌ Error running demo: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
     return True
+
 
 if __name__ == "__main__":
     success = main()

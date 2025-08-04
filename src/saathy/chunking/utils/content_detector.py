@@ -77,11 +77,11 @@ class ContentTypeDetector(ContentTypeDetectorInterface):
         # Define pattern weights (higher = more specific/important)
         pattern_weights = {
             ContentType.GIT_COMMIT: 3,  # Very specific patterns
-            ContentType.EMAIL: 3,       # Very specific patterns
+            ContentType.EMAIL: 3,  # Very specific patterns
             ContentType.SLACK_MESSAGE: 2,  # Specific patterns
-            ContentType.CODE: 2,        # Specific patterns
-            ContentType.DOCUMENT: 1,    # General patterns
-            ContentType.MEETING: 1,     # General patterns
+            ContentType.CODE: 2,  # Specific patterns
+            ContentType.DOCUMENT: 1,  # General patterns
+            ContentType.MEETING: 1,  # General patterns
         }
 
         for content_type, patterns in self.type_patterns.items():
