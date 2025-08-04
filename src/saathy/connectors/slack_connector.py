@@ -6,6 +6,7 @@ from typing import Any, Optional
 from slack_sdk.web.async_client import AsyncWebClient
 
 from .base import BaseConnector, ConnectorStatus, ContentType, ProcessedContent
+from .content_processor import ContentProcessor
 
 
 class SlackConnector(BaseConnector):
@@ -18,6 +19,7 @@ class SlackConnector(BaseConnector):
         self.channels = config.get("channels", [])
 
         self.web_client: Optional[AsyncWebClient] = None
+        self.content_processor: Optional[ContentProcessor] = None
         self._running = False
 
     async def start(self) -> None:
@@ -54,6 +56,11 @@ class SlackConnector(BaseConnector):
             self.status = ConnectorStatus.ERROR
             raise
 
+    def set_content_processor(self, processor: ContentProcessor) -> None:
+        """Set the content processor for this connector."""
+        self.content_processor = processor
+        self.logger.info("Content processor set for Slack connector")
+
     async def stop(self) -> None:
         """Stop Slack connector."""
         self._running = False
@@ -81,6 +88,34 @@ class SlackConnector(BaseConnector):
             self.logger.error(f"Error processing event: {e}")
 
         return processed_items
+
+    async def process_message_event(self, event: dict[str, Any]) -> None:
+        """Process message events and store in vector database."""
+        try:
+            # Skip bot messages and message updates
+            if event.get("subtype") or event.get("bot_id"):
+                return
+
+            channel = event.get("channel")
+            if self.channels and channel not in self.channels:
+                return
+
+            # Process the message into ProcessedContent
+            processed_content = await self.process_event(event)
+
+            # If we have a content processor, process and store
+            if self.content_processor and processed_content:
+                result = await self.content_processor.process_and_store(
+                    processed_content
+                )
+                self.logger.info(
+                    f"Processed {result['processed']} messages, {result['errors']} errors"
+                )
+            else:
+                self.logger.warning("No content processor configured")
+
+        except Exception as e:
+            self.logger.error(f"Error processing message event: {e}")
 
     async def _extract_message_content(
         self, message_data: dict[str, Any]

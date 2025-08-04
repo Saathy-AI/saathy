@@ -5,13 +5,15 @@ import hmac
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Union
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 
 from saathy import __version__
 from saathy.config import Settings, get_settings
-from saathy.connectors import ContentProcessor, GithubConnector, SlackConnector
+from saathy.connectors import GithubConnector, SlackConnector
+from saathy.connectors.content_processor import ContentProcessor
 from saathy.embedding.service import EmbeddingService, get_embedding_service
 from saathy.vector.client import QdrantClientWrapper
 from saathy.vector.repository import VectorRepository
@@ -80,14 +82,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
         try:
             slack_connector = SlackConnector(config=slack_config)
+
+            # Initialize content processor and connect it to Slack connector
+            embedding_service = app_state.get("embedding_service")
+            if embedding_service:
+                vector_repo = get_vector_repo()
+                content_processor = ContentProcessor(embedding_service, vector_repo)
+                slack_connector.set_content_processor(content_processor)
+                app_state["content_processor"] = content_processor
+                logging.info(
+                    "Content processor initialized and connected to Slack connector."
+                )
+            else:
+                logging.warning(
+                    "Embedding service not available, content processing disabled."
+                )
+
             await slack_connector.start()
             app_state["slack_connector"] = slack_connector
             logging.info("Slack connector initialized and started successfully.")
         except Exception as e:
             app_state["slack_connector"] = None
+            app_state["content_processor"] = None
             logging.error(f"Failed to initialize Slack connector: {e}")
     else:
         app_state["slack_connector"] = None
+        app_state["content_processor"] = None
         logging.warning(
             "Slack connector not configured. Skipping initialization. "
             "Provide SLACK_BOT_TOKEN to enable it."
@@ -162,26 +182,6 @@ def get_vector_repo() -> VectorRepository:
     return app_state["vector_repo"]
 
 
-def get_content_processor() -> ContentProcessor:
-    """Get the content processor from application state, creating it if needed."""
-    if app_state.get("content_processor") is None:
-        embedding_service = app_state.get("embedding_service")
-        vector_repo = get_vector_repo()
-
-        if not embedding_service:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Embedding service is not available.",
-            )
-
-        app_state["content_processor"] = ContentProcessor(
-            embedding_service=embedding_service,
-            vector_repo=vector_repo,
-        )
-
-    return app_state["content_processor"]
-
-
 def get_github_connector() -> GithubConnector:
     """Get the GitHub connector from application state, raising an error if unavailable."""
     github_connector = app_state.get("github_connector")
@@ -202,6 +202,17 @@ def get_slack_connector() -> SlackConnector:
             detail="Slack connector is not configured or available.",
         )
     return slack_connector
+
+
+def get_content_processor() -> ContentProcessor:
+    """Get the content processor from application state, raising an error if unavailable."""
+    content_processor = app_state.get("content_processor")
+    if not isinstance(content_processor, ContentProcessor):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Content processor is not configured or available.",
+        )
+    return content_processor
 
 
 @app.get("/healthz")
@@ -475,3 +486,34 @@ async def get_slack_channels(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch Slack channels.",
         ) from e
+
+
+@app.post("/connectors/slack/process")
+async def process_slack_content(
+    message: str,
+    channel_id: str = "manual",
+    content_processor: ContentProcessor = Depends(get_content_processor),
+):
+    """Manually process a Slack message."""
+    from saathy.connectors.base import ContentType, ProcessedContent
+
+    # Create mock ProcessedContent
+    content = ProcessedContent(
+        id=f"manual_{channel_id}_{datetime.now().timestamp()}",
+        content=message,
+        content_type=ContentType.TEXT,
+        source="slack_manual",
+        metadata={
+            "source": "slack",
+            "channel_id": channel_id,
+            "channel_name": "manual",
+            "user_id": "manual",
+            "timestamp": str(datetime.now().timestamp()),
+            "is_thread_reply": False,
+        },
+        timestamp=datetime.now(),
+        raw_data={"text": message, "channel": channel_id},
+    )
+
+    result = await content_processor.process_and_store([content])
+    return result
