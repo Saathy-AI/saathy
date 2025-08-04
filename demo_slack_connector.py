@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-from typing import Any, dict
+from typing import Any
 
 from src.saathy.config import settings
 from src.saathy.connectors.slack_connector import SlackConnector

@@ -1,7 +1,7 @@
 """Slack connector using Socket Mode for real-time message processing."""
 
 from datetime import datetime, timezone
-from typing import Any, Optional, dict, list
+from typing import Any, Optional
 
 from slack_sdk.web.async_client import AsyncWebClient
 
