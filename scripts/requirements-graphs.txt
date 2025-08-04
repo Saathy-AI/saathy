@@ -1,0 +1,2 @@
+graphviz==0.20.1
+pydantic-settings>=2.0.0
