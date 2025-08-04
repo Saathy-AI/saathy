@@ -15,12 +15,16 @@ logger = logging.getLogger(__name__)
 class ContentProcessor:
     """Processes content items and stores them in the vector database."""
 
-    def __init__(self, embedding_service: EmbeddingService, vector_repo: VectorRepository):
+    def __init__(
+        self, embedding_service: EmbeddingService, vector_repo: VectorRepository
+    ):
         """Initialize the content processor."""
         self.embedding_service = embedding_service
         self.vector_repo = vector_repo
 
-    async def process_and_store(self, content_items: list[ProcessedContent]) -> dict[str, Any]:
+    async def process_and_store(
+        self, content_items: list[ProcessedContent]
+    ) -> dict[str, Any]:
         """Process content items and store in vector database."""
         if not content_items:
             return {
@@ -83,7 +87,9 @@ class ContentProcessor:
 
             except Exception as e:
                 failed_items += 1
-                error_msg = f"Failed to process content item {content_item.id}: {str(e)}"
+                error_msg = (
+                    f"Failed to process content item {content_item.id}: {str(e)}"
+                )
                 errors.append(error_msg)
                 logger.error(error_msg, exc_info=True)
 

@@ -18,7 +18,17 @@ from saathy.vector.repository import VectorRepository
 
 # In-memory dictionary to hold settings during the application's lifespan.
 # This is a simple approach; for more complex scenarios, consider using a more robust solution.
-app_state: dict[str, Union[Settings, VectorRepository, EmbeddingService, GithubConnector, ContentProcessor, None]] = {}
+app_state: dict[
+    str,
+    Union[
+        Settings,
+        VectorRepository,
+        EmbeddingService,
+        GithubConnector,
+        ContentProcessor,
+        None,
+    ],
+] = {}
 
 
 @asynccontextmanager
@@ -195,6 +205,7 @@ async def get_config(settings: Settings = Depends(get_settings)) -> dict[str, st
 
 # --- GitHub Connector Endpoints ---
 
+
 @app.post("/webhooks/github")
 async def github_webhook(
     request: Request,
@@ -217,9 +228,12 @@ async def github_webhook(
         )
 
     body = await request.body()
-    expected_signature = "sha256=" + hmac.new(
-        settings.github_webhook_secret_str.encode("utf-8"), body, hashlib.sha256
-    ).hexdigest()
+    expected_signature = (
+        "sha256="
+        + hmac.new(
+            settings.github_webhook_secret_str.encode("utf-8"), body, hashlib.sha256
+        ).hexdigest()
+    )
 
     if not hmac.compare_digest(signature_header, expected_signature):
         raise HTTPException(
@@ -265,7 +279,11 @@ async def github_webhook(
         return {
             "status": "ok",
             "event": event_type,
-            "processing_result": {"total_items": 0, "processed_items": 0, "failed_items": 0},
+            "processing_result": {
+                "total_items": 0,
+                "processed_items": 0,
+                "failed_items": 0,
+            },
         }
 
 

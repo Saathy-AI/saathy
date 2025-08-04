@@ -3,7 +3,7 @@
 
 import sys
 
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 from saathy.config import get_settings
 
 
