@@ -4,57 +4,100 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-green.svg)](https://fastapi.tiangolo.com/)
 
-A FastAPI-based application foundation for building a personal AI copilot, currently in early development with production-ready infrastructure.
+A FastAPI-based application foundation for building a personal AI copilot with advanced content processing, connector integrations, and production-ready infrastructure.
 
 ## 🚀 Current Capabilities
 
 **Implemented Features:**
-- **FastAPI Web Framework**: Production-ready API with health monitoring endpoints
-- **Vector Database Integration**: Qdrant client setup with health check connectivity
-- **Embedding Service**: Multi-model embedding with support for text, code, and multimodal content
-- **Content Preprocessing**: Specialized preprocessing for different content types (text, code, meetings, images)
-- **Chunking Strategies**: Multiple chunking strategies (fixed, semantic, document-aware, code)
+- **FastAPI Web Framework**: Production-ready API with comprehensive health monitoring
+- **Vector Database Integration**: Qdrant client with health check connectivity and repository layer
+- **Advanced Chunking System**: Modular chunking strategies for different content types (text, code, documents, emails, meetings, Slack messages, Git commits)
+- **Connector Framework**: Extensible connector system with GitHub and Slack integrations
+- **Content Processing Pipeline**: Intelligent content preprocessing, chunking, and vector storage
 - **Observability**: OpenTelemetry tracing and structured logging with Jaeger integration
 - **Production Deployment**: Complete Docker Compose setup with Nginx, monitoring stack
 - **Development Infrastructure**: Poetry dependency management, comprehensive testing, code quality tools
 - **Configuration Management**: Pydantic Settings with environment variable support
 
 **API Endpoints:**
+
+**Health & Configuration:**
 - `GET /healthz` - Health check with Qdrant connectivity verification
 - `GET /readyz` - Readiness check for service availability
 - `GET /config` - Non-sensitive configuration display
-- `POST /embed` - Generate embeddings for single text
-- `POST /embed/batch` - Generate embeddings for multiple texts
-- `POST /embed/code` - Generate embeddings for code content
-- `GET /embed/models` - List available embedding models
-- `GET /embed/metrics` - Get embedding service metrics
-- `GET /embed/cache/stats` - Get cache statistics
-- `DELETE /embed/cache` - Clear embedding cache
+
+**GitHub Connector:**
+- `POST /webhooks/github` - GitHub webhook endpoint for repository events
+- `GET /connectors/github/status` - GitHub connector status and metrics
+- `POST /connectors/github/sync` - Manual repository synchronization
+
+**Slack Connector:**
+- `GET /connectors/slack/status` - Slack connector status and metrics
+- `POST /connectors/slack/start` - Start Slack connector
+- `POST /connectors/slack/stop` - Stop Slack connector
+- `GET /connectors/slack/channels` - List available Slack channels
+- `POST /connectors/slack/process` - Manually process Slack content
 
 ## 🏗️ Architecture
 
 ```
 src/saathy/
 ├── __init__.py          # Package initialization
-├── api.py              # FastAPI application with health endpoints
+├── api.py              # FastAPI application with all endpoints
 ├── config.py           # Pydantic Settings configuration
-├── main.py             # Server entrypoint
-├── scheduler.py        # APScheduler setup (basic)
+├── scheduler.py        # APScheduler setup for background tasks
 ├── telemetry.py        # OpenTelemetry tracing configuration
+├── chunking/           # Advanced chunking system
+│   ├── __init__.py     # Chunking package exports
+│   ├── processor.py    # Main chunking processor
+│   ├── strategies/     # Chunking strategies
+│   │   ├── base.py     # Base strategy interface
+│   │   ├── fixed_size.py # Fixed-size chunking
+│   │   ├── semantic.py # Semantic chunking
+│   │   ├── document.py # Document-aware chunking
+│   │   ├── code.py     # Code-specific chunking
+│   │   ├── email.py    # Email chunking
+│   │   ├── meeting.py  # Meeting transcript chunking
+│   │   ├── slack_message.py # Slack message chunking
+│   │   └── git_commit.py # Git commit chunking
+│   ├── core/           # Core chunking components
+│   │   ├── interfaces.py # Abstract interfaces
+│   │   ├── models.py   # Data models
+│   │   └── exceptions.py # Custom exceptions
+│   ├── utils/          # Utility modules
+│   │   ├── chunk_cache.py # Caching utilities
+│   │   ├── chunk_merger.py # Chunk merging logic
+│   │   ├── content_detector.py # Content type detection
+│   │   ├── hash_utils.py # Hashing utilities
+│   │   └── quality_validator.py # Quality validation
+│   └── analysis/       # Analysis tools
+│       ├── analyzer.py # Chunk analysis
+│       └── visualizer.py # Visualization tools
+├── connectors/         # Connector framework
+│   ├── __init__.py     # Connector exports
+│   ├── base.py         # Base connector interface
+│   ├── github_connector.py # GitHub integration
+│   ├── slack_connector.py # Slack integration
+│   └── content_processor.py # Content processing pipeline
 ├── embedding/          # Embedding service
 │   ├── __init__.py     # Embedding package exports
 │   ├── models.py       # Model registry and management
 │   ├── preprocessing.py # Content preprocessing
-│   ├── chunking.py     # Content chunking strategies
+│   ├── chunking.py     # Legacy chunking (deprecated)
 │   └── service.py      # Main embedding service
-└── vector/
-    └── repository.py   # Qdrant client wrapper with health check
+└── vector/             # Vector database layer
+    ├── __init__.py     # Vector package exports
+    ├── client.py       # Qdrant client wrapper
+    ├── repository.py   # Repository pattern implementation
+    ├── models.py       # Vector data models
+    ├── exceptions.py   # Vector-specific exceptions
+    └── metrics.py      # Vector operation metrics
 ```
 
 **Production Stack:**
 - **Application**: FastAPI with Uvicorn/Gunicorn
 - **Vector Database**: Qdrant v1.9.2
-- **Reverse Proxy**: Nginx with SSL termination
+- **Reverse Proxy**: Nginx with SSL termination and rate limiting
 - **Monitoring**: Prometheus + Grafana + OpenTelemetry Collector
 - **Containerization**: Docker with multi-stage builds
 
@@ -176,6 +219,12 @@ docker-compose -f docker-compose.dev.yml up -d --build
 | `QDRANT_URL` | Qdrant vector database URL | `http://localhost:6333` |
 | `QDRANT_API_KEY` | Qdrant API key | `None` |
 | `OPENAI_API_KEY` | OpenAI API key | `None` |
+| `GITHUB_TOKEN` | GitHub personal access token | `None` |
+| `GITHUB_WEBHOOK_SECRET` | GitHub webhook secret | `None` |
+| `GITHUB_REPOSITORIES` | Comma-separated list of repositories | `None` |
+| `SLACK_BOT_TOKEN` | Slack bot token (xoxb-...) | `None` |
+| `SLACK_APP_TOKEN` | Slack app-level token (xapp-...) | `None` |
+| `SLACK_CHANNELS` | Comma-separated list of channel IDs | `None` |
 | `DEFAULT_EMBEDDING_MODEL` | Default embedding model | `all-MiniLM-L6-v2` |
 | `EMBEDDING_CACHE_SIZE` | Maximum cached embeddings | `1000` |
 | `EMBEDDING_CACHE_TTL` | Cache TTL in seconds | `3600` |
@@ -189,27 +238,88 @@ docker-compose -f docker-compose.dev.yml up -d --build
 ### Production Configuration
 
 The production setup includes:
-- **Nginx**: Reverse proxy with SSL termination
+- **Nginx**: Reverse proxy with SSL termination and rate limiting
 - **Prometheus**: Metrics collection
 - **Grafana**: Monitoring dashboards
 - **OpenTelemetry Collector**: Distributed tracing
 - **Health Checks**: Container health monitoring
 - **Logging**: Structured JSON logging with rotation
 
+## 🔗 Connector System
+
+Saathy includes a flexible connector framework for integrating with external platforms and services.
+
+### GitHub Connector
+
+The GitHub connector processes repository events via webhooks and provides manual synchronization capabilities.
+
+**Features:**
+- Webhook event processing (pushes, pull requests, issues)
+- Manual repository synchronization
+- Content extraction and processing
+- Git commit history analysis
+
+**Setup:**
+1. Create a GitHub personal access token
+2. Configure webhook secret
+3. Add repositories to monitor
+4. Set up webhook URL: `https://your-domain.com/webhooks/github`
+
+**📖 [GitHub Connector Documentation](docs/github-setup.md)**
+
+### Slack Connector
+
+The Slack connector provides real-time message processing and content extraction from Slack channels.
+
+**Features:**
+- Real-time message processing
+- Channel monitoring and management
+- Content extraction and chunking
+- Thread and reply handling
+
+**Setup:**
+1. Create a Slack app with appropriate permissions
+2. Configure bot token and app token
+3. Add channels to monitor
+4. Start the connector via API
+
+**📖 [Slack Connector Documentation](docs/slack-setup.md)**
+
+## 📊 Chunking System
+
+Saathy features a sophisticated chunking system with multiple strategies optimized for different content types.
+
+### Available Strategies
+
+- **Fixed Size**: Token/character-based chunking with overlap
+- **Semantic**: Content-aware chunking based on semantic boundaries
+- **Document**: Document structure-aware chunking
+- **Code**: Language-specific code chunking with function extraction
+- **Email**: Email-specific chunking with header/body separation
+- **Meeting**: Meeting transcript chunking with speaker detection
+- **Slack Message**: Slack-specific message chunking
+- **Git Commit**: Git commit history chunking
+
+### Key Features
+
+- **Content Type Detection**: Automatic detection of content type
+- **Quality Validation**: Chunk quality metrics and validation
+- **Caching**: Intelligent caching with content hashing
+- **Merging**: Small chunk merging for optimal size
+- **Context Preservation**: Overlap and context maintenance
+- **Performance Optimization**: Batch processing and parallel execution
+
+**📖 [Chunking System Documentation](docs/chunking-system.md)**
+
 ## 🔤 Embedding Service
 
-The embedding service provides multi-model support for generating vector embeddings from various content types including text, code, meetings, and images. It features intelligent preprocessing, multiple chunking strategies, caching, and comprehensive monitoring.
+The embedding service provides multi-model support for generating vector embeddings from various content types.
 
 **📖 [Complete Embedding Service Documentation](docs/embedding-service.md)**
 
 ### Quick Start
 
 ```bash
-# Single text embedding
-curl -X POST "http://localhost:8000/embed" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Hello world", "content_type": "text"}'
-
 # Get available models
 curl "http://localhost:8000/embed/models"
 
@@ -220,7 +330,6 @@ curl "http://localhost:8000/embed/metrics"
 ### Key Features
 - **Multi-Model Support**: Local SentenceTransformers + OpenAI API
 - **Content-Specific Processing**: Text, code, meetings, images
-- **Multiple Chunking Strategies**: Fixed, semantic, document-aware, code
 - **Performance Optimization**: Caching, batch processing, GPU detection
 - **Comprehensive Monitoring**: Processing times, error rates, quality scores
 
@@ -231,6 +340,10 @@ curl "http://localhost:8000/embed/metrics"
 - **Readiness**: `GET /readyz` - Service readiness status
 - **Configuration**: `GET /config` - Non-sensitive config display
 
+### Connector Monitoring
+- **GitHub**: `GET /connectors/github/status` - GitHub connector health
+- **Slack**: `GET /connectors/slack/status` - Slack connector health
+
 ### Observability
 - **Tracing**: OpenTelemetry with Jaeger integration
 - **Logging**: Structured logging with correlation IDs
@@ -239,28 +352,33 @@ curl "http://localhost:8000/embed/metrics"
 
 ## 🚧 Development Status
 
-**Current State**: Early Development
+**Current State**: Active Development
 - ✅ Foundation infrastructure complete
 - ✅ Production deployment pipeline
 - ✅ Health monitoring and observability
 - ✅ Vector database connectivity
-- 🔄 Core AI features in development
-- 📋 Advanced features planned
+- ✅ Advanced chunking system
+- ✅ Connector framework with GitHub and Slack
+- ✅ Content processing pipeline
+- 🔄 Vector search and similarity matching
+- 📋 Advanced AI features planned
 
 **What's Working:**
-- FastAPI application with health endpoints
+- FastAPI application with comprehensive endpoints
 - Qdrant vector database connection
 - OpenTelemetry tracing and logging
 - Docker production deployment
 - Comprehensive testing framework
 - Code quality and formatting tools
+- Advanced chunking system with multiple strategies
+- GitHub and Slack connector integrations
+- Content processing and storage pipeline
 
 **What's Not Yet Implemented:**
-- Vector search and similarity matching
-- Git repository integration
-- Slack or other platform connectors
-- Meeting transcription capabilities
-- CLI tools and utilities
+- Vector search and similarity matching endpoints
+- Advanced LLM integration
+- Real-time collaboration features
+- Advanced analytics and insights
 
 ## 🗺️ Development Roadmap
 
@@ -270,24 +388,25 @@ curl "http://localhost:8000/embed/metrics"
 - [x] Observability and monitoring
 - [x] Production deployment pipeline
 
-### Phase 2: Core Features (In Progress)
-- [x] Vector embedding service
-- [x] Document processing and chunking
+### Phase 2: Core Features ✅
+- [x] Advanced chunking system
+- [x] Connector framework
+- [x] GitHub and Slack integrations
+- [x] Content processing pipeline
 - [ ] Vector search and similarity matching
 - [ ] Basic LLM integration
-- [ ] Repository connectors
 
-### Phase 3: Advanced Features (Planned)
+### Phase 3: Advanced Features (In Progress)
 - [ ] Multi-modal content support
 - [ ] Advanced search algorithms
 - [ ] Real-time collaboration
 - [ ] Advanced analytics
 
 ### Phase 4: Platform Integration (Future)
-- [ ] Slack integration
-- [ ] Git platform connectors
-- [ ] Notion integration
+- [ ] Additional platform connectors
 - [ ] Meeting transcription
+- [ ] Advanced AI features
+- [ ] Enterprise features
 
 ## 🤝 Contributing
 
@@ -302,6 +421,7 @@ curl "http://localhost:8000/embed/metrics"
 - Add tests for new features
 - Update documentation as needed
 - Ensure all tests pass before submitting
+- Follow the exception handling patterns (B904 compliance)
 
 ## 📄 License
 
@@ -316,4 +436,4 @@ For questions, issues, or contributions:
 
 ---
 
-**Note**: This is an early-stage project. The foundation infrastructure is complete and production-ready, but core AI features are still in development.
+**Note**: This project is actively developed with a focus on production-ready infrastructure and extensible architecture for building AI-powered applications.
