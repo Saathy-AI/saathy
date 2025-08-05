@@ -13,7 +13,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from saathy import __version__
 from saathy.config import Settings, get_settings
 from saathy.connectors import GithubConnector, NotionConnector, SlackConnector
-from saathy.connectors.content_processor import ContentProcessor
+from saathy.connectors.content_processor import ContentProcessor, NotionContentProcessor
 from saathy.embedding.service import EmbeddingService, get_embedding_service
 from saathy.vector.client import QdrantClientWrapper
 from saathy.vector.repository import VectorRepository
@@ -30,6 +30,7 @@ app_state: dict[
         NotionConnector,
         SlackConnector,
         ContentProcessor,
+        NotionContentProcessor,
         None,
     ],
 ] = {}
@@ -139,14 +140,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logging.info("Notion connector is configured, initializing.")
         try:
             notion_connector = NotionConnector(config=notion_config)
-            await notion_connector.start()
+
+            # Initialize Notion content processor
+            embedding_service = await get_embedding_service()
+            vector_repo = get_vector_repo()
+            notion_content_processor = NotionContentProcessor(
+                embedding_service, vector_repo
+            )
+
+            # Connect them
+            notion_connector.set_content_processor(notion_content_processor)
+
             app_state["notion_connector"] = notion_connector
+            app_state["notion_content_processor"] = notion_content_processor
+
+            # Start connector
+            await notion_connector.start()
+
             logging.info("Notion connector initialized and started successfully.")
         except Exception as e:
             app_state["notion_connector"] = None
+            app_state["notion_content_processor"] = None
             logging.error(f"Failed to initialize Notion connector: {e}")
     else:
         app_state["notion_connector"] = None
+        app_state["notion_content_processor"] = None
         logging.warning(
             "Notion connector not configured. Skipping initialization. "
             "Provide NOTION_TOKEN to enable it."
@@ -634,6 +652,24 @@ async def notion_connector_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get Notion connector status.",
         ) from e
+
+
+@app.get("/connectors/notion/processing-stats")
+async def notion_processing_stats(
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Get Notion content processing statistics."""
+    if not notion_connector:
+        raise HTTPException(status_code=503, detail="Notion connector not available")
+
+    # Return processing statistics
+    return {
+        "total_processed": len(notion_connector._processed_items),
+        "databases_monitored": len(notion_connector.databases),
+        "pages_monitored": len(notion_connector.pages),
+        "last_sync_times": notion_connector._last_sync,
+        "connector_status": notion_connector.status.value,
+    }
 
 
 @app.post("/connectors/notion/start")

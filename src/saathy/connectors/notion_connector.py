@@ -8,6 +8,7 @@ from notion_client import AsyncClient
 from notion_client.errors import APIResponseError
 
 from .base import BaseConnector, ConnectorStatus, ProcessedContent
+from .content_processor import NotionContentProcessor
 from .notion_content_extractor import NotionContentExtractor
 
 
@@ -22,6 +23,7 @@ class NotionConnector(BaseConnector):
         self.poll_interval = config.get("poll_interval", 300)  # 5 minutes default
         self.client: Optional[AsyncClient] = None
         self.content_extractor: Optional[NotionContentExtractor] = None
+        self.content_processor: Optional[NotionContentProcessor] = None
         self._running = False
         self._start_time: Optional[datetime] = (
             None  # Track start time for uptime calculation
@@ -77,6 +79,10 @@ class NotionConnector(BaseConnector):
             self.client = None
 
         self.logger.info("Notion connector stopped")
+
+    def set_content_processor(self, processor: NotionContentProcessor) -> None:
+        """Set the content processor for this connector."""
+        self.content_processor = processor
 
     async def _test_connection(self) -> None:
         """Test Notion API connection."""
@@ -226,11 +232,10 @@ class NotionConnector(BaseConnector):
     async def _process_database_page(
         self, page_data: dict[str, Any], database_title: str
     ) -> None:
-        """Process a page from a database."""
+        """Process a page from a database with content processor."""
         try:
             page_id = page_data["id"]
 
-            # Skip if already processed recently
             if page_id in self._processed_items:
                 return
 
@@ -239,14 +244,21 @@ class NotionConnector(BaseConnector):
                 page_data, parent_database=database_title
             )
 
-            if processed_content:
+            if processed_content and self.content_processor:
+                # Process and store in vector database
+                result = await self.content_processor.process_notion_content(
+                    processed_content
+                )
+                self.logger.info(
+                    f"Processed database page '{database_title}': {result.processed} items, {result.errors} errors"
+                )
+
                 # Mark as processed
                 self._processed_items.add(page_id)
-
-                # Here you would typically send to processing queue
-                # For now, just log
-                for content in processed_content:
-                    self.logger.info(f"Processed database page: {content.id}")
+            else:
+                self.logger.warning(
+                    "No content processor configured or no content extracted"
+                )
 
         except Exception as e:
             self.logger.error(
@@ -254,11 +266,10 @@ class NotionConnector(BaseConnector):
             )
 
     async def _process_page(self, page_data: dict[str, Any]) -> None:
-        """Process a standalone page."""
+        """Process a standalone page with content processor."""
         try:
             page_id = page_data["id"]
 
-            # Skip if already processed recently
             if page_id in self._processed_items:
                 return
 
@@ -267,13 +278,21 @@ class NotionConnector(BaseConnector):
                 page_data
             )
 
-            if processed_content:
+            if processed_content and self.content_processor:
+                # Process and store in vector database
+                result = await self.content_processor.process_notion_content(
+                    processed_content
+                )
+                self.logger.info(
+                    f"Processed page: {result.processed} items, {result.errors} errors"
+                )
+
                 # Mark as processed
                 self._processed_items.add(page_id)
-
-                # Here you would typically send to processing queue
-                for content in processed_content:
-                    self.logger.info(f"Processed page: {content.id}")
+            else:
+                self.logger.warning(
+                    "No content processor configured or no content extracted"
+                )
 
         except Exception as e:
             self.logger.error(f"Failed to process page {page_data.get('id')}: {e}")
