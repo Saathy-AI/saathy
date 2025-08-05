@@ -6,6 +6,7 @@ from .base import (
 )
 from .content_processor import ContentProcessor
 from .github_connector import GithubConnector
+from .notion_connector import NotionConnector
 from .slack_connector import SlackConnector
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "ProcessedContent",
     "ContentProcessor",
     "GithubConnector",
+    "NotionConnector",
     "SlackConnector",
 ]

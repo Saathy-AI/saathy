@@ -64,6 +64,20 @@ class Settings(BaseSettings):
         default="", description="Comma-separated list of Slack channel IDs to monitor"
     )
 
+    # Notion connector settings
+    notion_token: Optional[SecretStr] = Field(
+        default=None, description="Notion integration token"
+    )
+    notion_databases: str = Field(
+        default="", description="Comma-separated list of Notion database IDs to monitor"
+    )
+    notion_pages: str = Field(
+        default="", description="Comma-separated list of Notion page IDs to monitor"
+    )
+    notion_poll_interval: int = Field(
+        default=300, description="Polling interval in seconds for Notion updates"
+    )
+
     # Embedding settings
     default_embedding_model: str = Field(
         default="all-MiniLM-L6-v2", description="Default embedding model to use"
@@ -205,6 +219,14 @@ class Settings(BaseSettings):
 
         # Fall back to environment variable
         return self.slack_app_token.get_secret_value() if self.slack_app_token else None
+
+    @property
+    def notion_token_str(self) -> Optional[str]:
+        """Get Notion token as string if available."""
+        file_secret = self._read_secret_from_file("NOTION_TOKEN")
+        if file_secret:
+            return file_secret
+        return self.notion_token.get_secret_value() if self.notion_token else None
 
 
 def get_settings() -> Settings:

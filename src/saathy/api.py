@@ -6,14 +6,14 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Union
+from typing import Optional, Union
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 
 from saathy import __version__
 from saathy.config import Settings, get_settings
-from saathy.connectors import GithubConnector, SlackConnector
-from saathy.connectors.content_processor import ContentProcessor
+from saathy.connectors import GithubConnector, NotionConnector, SlackConnector
+from saathy.connectors.content_processor import ContentProcessor, NotionContentProcessor
 from saathy.embedding.service import EmbeddingService, get_embedding_service
 from saathy.vector.client import QdrantClientWrapper
 from saathy.vector.repository import VectorRepository
@@ -27,11 +27,32 @@ app_state: dict[
         VectorRepository,
         EmbeddingService,
         GithubConnector,
+        NotionConnector,
         SlackConnector,
         ContentProcessor,
+        NotionContentProcessor,
         None,
     ],
 ] = {}
+
+
+def get_notion_config(settings: Settings) -> dict[str, any]:
+    """Extract and validate Notion configuration from settings."""
+    token = settings.notion_token_str
+    if not token:
+        return {}
+
+    databases = [
+        db.strip() for db in settings.notion_databases.split(",") if db.strip()
+    ]
+    pages = [page.strip() for page in settings.notion_pages.split(",") if page.strip()]
+
+    return {
+        "token": token,
+        "databases": databases,
+        "pages": pages,
+        "poll_interval": settings.notion_poll_interval,
+    }
 
 
 @asynccontextmanager
@@ -113,6 +134,42 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             "Provide SLACK_BOT_TOKEN to enable it."
         )
 
+    # Initialize Notion connector if configured
+    notion_config = get_notion_config(settings)
+    if notion_config.get("token"):
+        logging.info("Notion connector is configured, initializing.")
+        try:
+            notion_connector = NotionConnector(config=notion_config)
+
+            # Initialize Notion content processor
+            embedding_service = await get_embedding_service()
+            vector_repo = get_vector_repo()
+            notion_content_processor = NotionContentProcessor(
+                embedding_service, vector_repo
+            )
+
+            # Connect them
+            notion_connector.set_content_processor(notion_content_processor)
+
+            app_state["notion_connector"] = notion_connector
+            app_state["notion_content_processor"] = notion_content_processor
+
+            # Start connector
+            await notion_connector.start()
+
+            logging.info("Notion connector initialized and started successfully.")
+        except Exception as e:
+            app_state["notion_connector"] = None
+            app_state["notion_content_processor"] = None
+            logging.error(f"Failed to initialize Notion connector: {e}")
+    else:
+        app_state["notion_connector"] = None
+        app_state["notion_content_processor"] = None
+        logging.warning(
+            "Notion connector not configured. Skipping initialization. "
+            "Provide NOTION_TOKEN to enable it."
+        )
+
     # Initialize embedding service
     try:
         embedding_service = await get_embedding_service()
@@ -134,6 +191,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if isinstance(slack_connector, SlackConnector):
         logging.info("Shutting down Slack connector.")
         await slack_connector.stop()
+
+    notion_connector = app_state.get("notion_connector")
+    if isinstance(notion_connector, NotionConnector):
+        logging.info("Shutting down Notion connector.")
+        await notion_connector.stop()
 
     app_state.clear()
 
@@ -202,6 +264,17 @@ def get_slack_connector() -> SlackConnector:
             detail="Slack connector is not configured or available.",
         )
     return slack_connector
+
+
+def get_notion_connector() -> NotionConnector:
+    """Get the Notion connector from application state, raising an error if unavailable."""
+    notion_connector = app_state.get("notion_connector")
+    if not isinstance(notion_connector, NotionConnector):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Notion connector is not configured or available.",
+        )
+    return notion_connector
 
 
 def get_content_processor() -> ContentProcessor:
@@ -517,3 +590,303 @@ async def process_slack_content(
 
     result = await content_processor.process_and_store([content])
     return result
+
+
+# --- Notion Connector Endpoints ---
+
+
+@app.get("/connectors/notion/status")
+async def notion_connector_status(
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Get comprehensive status of the Notion connector."""
+    try:
+        status_info = notion_connector.get_status()
+
+        # Calculate uptime
+        uptime = "Unknown"
+        if hasattr(notion_connector, "_start_time") and notion_connector._start_time:
+            from datetime import datetime, timezone
+
+            uptime_delta = datetime.now(timezone.utc) - notion_connector._start_time
+            hours = int(uptime_delta.total_seconds() // 3600)
+            minutes = int((uptime_delta.total_seconds() % 3600) // 60)
+            uptime = f"{hours}h {minutes}m"
+
+        # Get last sync time
+        last_sync = None
+        if notion_connector._last_sync:
+            last_sync = max(notion_connector._last_sync.values()).isoformat()
+
+        # Calculate sync statistics
+        total_pages_processed = len(notion_connector._processed_items)
+
+        return {
+            "status": status_info["status"],
+            "name": "notion",
+            "uptime": uptime,
+            "last_sync": last_sync,
+            "total_pages_processed": total_pages_processed,
+            "databases_monitored": notion_connector.databases,
+            "pages_monitored": notion_connector.pages,
+            "sync_statistics": {
+                "total_syncs": len(notion_connector._last_sync),
+                "successful_syncs": len(notion_connector._last_sync),
+                "failed_syncs": 0,  # TODO: Track failed syncs
+                "last_error": None,  # TODO: Track last error
+                "average_sync_time": 0,  # TODO: Track sync times
+                "items_per_sync": total_pages_processed
+                / max(len(notion_connector._last_sync), 1),
+            },
+            "configuration": {
+                "poll_interval": notion_connector.poll_interval,
+                "auto_discover": len(notion_connector.databases) == 0
+                and len(notion_connector.pages) == 0,
+                "databases_count": len(notion_connector.databases),
+                "pages_count": len(notion_connector.pages),
+            },
+        }
+    except Exception as e:
+        logging.error(f"Error getting Notion connector status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get Notion connector status.",
+        ) from e
+
+
+@app.get("/connectors/notion/processing-stats")
+async def notion_processing_stats(
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Get Notion content processing statistics."""
+    if not notion_connector:
+        raise HTTPException(status_code=503, detail="Notion connector not available")
+
+    # Return processing statistics
+    return {
+        "total_processed": len(notion_connector._processed_items),
+        "databases_monitored": len(notion_connector.databases),
+        "pages_monitored": len(notion_connector.pages),
+        "last_sync_times": notion_connector._last_sync,
+        "connector_status": notion_connector.status.value,
+    }
+
+
+@app.post("/connectors/notion/start")
+async def start_notion_connector(
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Start the Notion connector if not running."""
+    try:
+        if notion_connector.status.value == "active":
+            return {"message": "Notion connector is already running."}
+
+        await notion_connector.start()
+        return {"message": "Notion connector started successfully."}
+    except Exception as e:
+        logging.error(f"Error starting Notion connector: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to start Notion connector.",
+        ) from e
+
+
+@app.post("/connectors/notion/stop")
+async def stop_notion_connector(
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Stop the Notion connector if running."""
+    try:
+        if notion_connector.status.value == "inactive":
+            return {"message": "Notion connector is already stopped."}
+
+        await notion_connector.stop()
+        return {"message": "Notion connector stopped successfully."}
+    except Exception as e:
+        logging.error(f"Error stopping Notion connector: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to stop Notion connector.",
+        ) from e
+
+
+@app.post("/connectors/notion/sync")
+async def trigger_notion_sync(
+    full_sync: bool = False,
+    database_id: Optional[str] = None,
+    page_id: Optional[str] = None,
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Trigger manual sync - full or incremental, specific resources or all."""
+    try:
+        if database_id:
+            await notion_connector._sync_database(database_id, full_sync=full_sync)
+            return {
+                "message": f"Database {database_id} synced successfully.",
+                "sync_type": "full" if full_sync else "incremental",
+                "resource_type": "database",
+                "resource_id": database_id,
+            }
+        elif page_id:
+            await notion_connector._sync_page(page_id, full_sync=full_sync)
+            return {
+                "message": f"Page {page_id} synced successfully.",
+                "sync_type": "full" if full_sync else "incremental",
+                "resource_type": "page",
+                "resource_id": page_id,
+            }
+        else:
+            # Full sync of all configured resources
+            await notion_connector._initial_sync()
+            return {
+                "message": "Full Notion sync completed successfully.",
+                "sync_type": "full",
+                "resource_type": "all",
+                "databases_synced": len(notion_connector.databases),
+                "pages_synced": len(notion_connector.pages),
+            }
+    except Exception as e:
+        logging.error(f"Error during Notion sync: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to sync Notion content.",
+        ) from e
+
+
+@app.get("/connectors/notion/databases")
+async def list_notion_databases(
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """List available databases in Notion workspace."""
+    if not notion_connector or not notion_connector.client:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Notion connector not available",
+        )
+
+    try:
+        # Search for databases
+        search_response = await notion_connector.client.search(
+            filter={"property": "object", "value": "database"}
+        )
+
+        databases = []
+        for result in search_response.get("results", []):
+            title = notion_connector._extract_title(result.get("title", []))
+            databases.append(
+                {
+                    "id": result["id"],
+                    "title": title,
+                    "url": result.get("url", ""),
+                    "created_time": result.get("created_time"),
+                    "last_edited_time": result.get("last_edited_time"),
+                    "is_monitored": result["id"] in notion_connector.databases,
+                }
+            )
+
+        return {
+            "databases": databases,
+            "total_count": len(databases),
+            "monitored_count": len([db for db in databases if db["is_monitored"]]),
+        }
+
+    except Exception as e:
+        logging.error(f"Failed to list Notion databases: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve databases",
+        ) from e
+
+
+@app.get("/connectors/notion/search")
+async def search_notion_content(
+    query: str,
+    limit: int = 10,
+    notion_connector: NotionConnector = Depends(get_notion_connector),
+):
+    """Search Notion workspace for content."""
+    if not notion_connector or not notion_connector.client:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Notion connector not available",
+        )
+
+    try:
+        search_response = await notion_connector.client.search(
+            query=query, page_size=min(limit, 100)
+        )
+
+        results = []
+        for result in search_response.get("results", []):
+            object_type = result.get("object")
+            if object_type == "page":
+                title = notion_connector._extract_title(
+                    result.get("properties", {}).get("title", {}).get("title", [])
+                )
+                results.append(
+                    {
+                        "id": result["id"],
+                        "type": "page",
+                        "title": title,
+                        "url": result.get("url", ""),
+                        "last_edited_time": result.get("last_edited_time"),
+                    }
+                )
+            elif object_type == "database":
+                title = notion_connector._extract_title(result.get("title", []))
+                results.append(
+                    {
+                        "id": result["id"],
+                        "type": "database",
+                        "title": title,
+                        "url": result.get("url", ""),
+                        "last_edited_time": result.get("last_edited_time"),
+                    }
+                )
+
+        return {"results": results, "query": query, "total_count": len(results)}
+
+    except Exception as e:
+        logging.error(f"Failed to search Notion content: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Search failed"
+        ) from e
+
+
+@app.post("/connectors/notion/process")
+async def process_notion_content(
+    page_data: dict,
+    content_processor: ContentProcessor = Depends(get_content_processor),
+):
+    """Manually process Notion page data."""
+    try:
+        from notion_client import AsyncClient
+
+        from saathy.connectors.notion_content_extractor import NotionContentExtractor
+
+        # Create a temporary client for processing
+        settings = get_settings()
+        if not settings.notion_token_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Notion token not configured.",
+            )
+
+        client = AsyncClient(auth=settings.notion_token_str)
+        extractor = NotionContentExtractor(client)
+
+        # Extract content from the page data
+        processed_content = await extractor.extract_page_content(page_data)
+
+        if processed_content:
+            result = await content_processor.process_and_store(processed_content)
+            return result
+        else:
+            return {"message": "No content extracted from page data."}
+
+    except Exception as e:
+        logging.error(f"Error processing Notion content: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process Notion content.",
+        ) from e
