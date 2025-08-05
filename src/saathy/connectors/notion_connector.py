@@ -23,6 +23,9 @@ class NotionConnector(BaseConnector):
         self.client: Optional[AsyncClient] = None
         self.content_extractor: Optional[NotionContentExtractor] = None
         self._running = False
+        self._start_time: Optional[datetime] = (
+            None  # Track start time for uptime calculation
+        )
         self._last_sync: dict[str, datetime] = {}  # Track last sync time per resource
         self._processed_items: set[str] = (
             set()
@@ -48,6 +51,7 @@ class NotionConnector(BaseConnector):
 
             self.status = ConnectorStatus.ACTIVE
             self._running = True
+            self._start_time = datetime.now(timezone.utc)
 
             # Perform initial full sync
             await self._initial_sync()
@@ -66,6 +70,7 @@ class NotionConnector(BaseConnector):
         """Stop Notion connector."""
         self._running = False
         self.status = ConnectorStatus.INACTIVE
+        self._start_time = None
 
         if self.client:
             # notion-client doesn't have explicit close method
