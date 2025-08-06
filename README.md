@@ -4,12 +4,12 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-green.svg)](https://fastapi.tiangolo.com/)
 
-A FastAPI-based AI copilot that proactively watches your work across platforms and suggests actionable next steps with full context. While competitors make you ask questions, Saathy tells you what to do next.
+An AI copilot that proactively shadows your work across platforms and suggests actionable next steps with full context. While others make you ask questions, Saathy tells you what to do next.
 
 ## ✨ Core Value Proposition
 
 **Proactive Action Intelligence**: Saathy's V1 core differentiator is its ability to:
-- **Watch** your activity across Slack, GitHub, and Notion in real-time
+- **Shadow** your activity across Slack, GitHub, and Notion in real-time 
 - **Correlate** related events across platforms using advanced similarity algorithms
 - **Synthesize** context from multi-platform activity into coherent insights
 - **Generate** specific, actionable recommendations using GPT-4o
