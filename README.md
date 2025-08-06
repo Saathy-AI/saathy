@@ -4,11 +4,29 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-green.svg)](https://fastapi.tiangolo.com/)
 
-A FastAPI-based application foundation for building a personal AI copilot with advanced content processing, connector integrations, and production-ready infrastructure.
+A FastAPI-based AI copilot that proactively watches your work across platforms and suggests actionable next steps with full context. While competitors make you ask questions, Saathy tells you what to do next.
+
+## ✨ Core Value Proposition
+
+**Proactive Action Intelligence**: Saathy's V1 core differentiator is its ability to:
+- **Watch** your activity across Slack, GitHub, and Notion in real-time
+- **Correlate** related events across platforms using advanced similarity algorithms
+- **Synthesize** context from multi-platform activity into coherent insights
+- **Generate** specific, actionable recommendations using GPT-4o
+- **Deliver** timely suggestions when you need them most
 
 ## 🚀 Current Capabilities
 
 **Implemented Features:**
+
+**🧠 Proactive Intelligence System (V1 Core):**
+- **Real-Time Event Streaming**: WebSocket/webhook monitoring of Slack, GitHub, and Notion
+- **Cross-Platform Event Correlation**: Intelligent linking of related activities using similarity scoring
+- **Context Synthesis**: AI-powered analysis of correlated events to extract insights and urgency signals
+- **GPT-4 Action Generation**: Specific, actionable recommendations with direct platform links
+- **Smart Timing**: Proactive delivery based on user context and urgency
+
+**🏗️ Foundation Infrastructure:**
 - **FastAPI Web Framework**: Production-ready API with comprehensive health monitoring
 - **Vector Database Integration**: Qdrant client with health check connectivity and repository layer
 - **Advanced Chunking System**: Modular chunking strategies for different content types (text, code, documents, emails, meetings, Slack messages, Git commits)
@@ -21,19 +39,26 @@ A FastAPI-based application foundation for building a personal AI copilot with a
 
 **API Endpoints:**
 
+**🧠 Intelligence & Actions:**
+- `GET /actions/user/{user_id}` - Get proactive action recommendations for user
+- `POST /actions/{action_id}/complete` - Mark action as completed
+- `POST /actions/{action_id}/feedback` - Provide feedback on action usefulness
+- `GET /correlations/user/{user_id}` - Get event correlations for user
+- `GET /events/user/{user_id}` - Get recent events across platforms
+
 **Health & Configuration:**
 - `GET /healthz` - Health check with Qdrant connectivity verification
 - `GET /readyz` - Readiness check for service availability
 - `GET /config` - Non-sensitive configuration display
 
 **GitHub Connector:**
-- `POST /webhooks/github` - GitHub webhook endpoint for repository events
+- `POST /webhooks/github` - GitHub webhook endpoint for repository events (enhanced for streaming)
 - `GET /connectors/github/status` - GitHub connector status and metrics
 - `POST /connectors/github/sync` - Manual repository synchronization
 
 **Slack Connector:**
 - `GET /connectors/slack/status` - Slack connector status and metrics
-- `POST /connectors/slack/start` - Start Slack connector
+- `POST /connectors/slack/start` - Start Slack connector (enhanced for real-time streaming)
 - `POST /connectors/slack/stop` - Stop Slack connector
 - `GET /connectors/slack/channels` - List available Slack channels
 - `POST /connectors/slack/process` - Manually process Slack content
@@ -47,6 +72,21 @@ src/saathy/
 ├── config.py           # Pydantic Settings configuration
 ├── scheduler.py        # APScheduler setup for background tasks
 ├── telemetry.py        # OpenTelemetry tracing configuration
+├── streaming/          # 🧠 Real-time event streaming & correlation
+│   ├── models/         # Event data models (Slack, GitHub, Notion)
+│   │   └── events.py   # Pydantic models for standardized events
+│   ├── event_manager.py        # Central event coordination & Redis storage
+│   ├── event_correlator.py     # Cross-platform event correlation logic
+│   ├── slack_stream.py         # Real-time Slack WebSocket streaming
+│   ├── github_webhook.py       # Enhanced GitHub webhook processing
+│   └── notion_poller.py        # Notion change detection via polling
+├── intelligence/       # 🤖 AI-powered context synthesis & action generation
+│   ├── models/         # Intelligence data models
+│   │   └── actions.py  # Action and context bundle models
+│   ├── prompts/        # GPT-4 prompt templates
+│   │   └── action_generation.py  # Sophisticated prompts for action creation
+│   ├── context_synthesizer.py   # Multi-platform context synthesis
+│   └── action_generator.py      # GPT-4 powered action generation
 ├── chunking/           # Advanced chunking system
 │   ├── __init__.py     # Chunking package exports
 │   ├── processor.py    # Main chunking processor
@@ -373,6 +413,55 @@ curl "http://localhost:8000/embed/metrics"
 - Advanced chunking system with multiple strategies
 - GitHub and Slack connector integrations
 - Content processing and storage pipeline
+- **🧠 Proactive Intelligence System**: Real-time event streaming, correlation, and AI-powered action generation
+
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run tests with coverage
+poetry run pytest --cov=src/saathy --cov-report=html
+
+# Run specific test categories
+poetry run pytest tests/streaming/        # Streaming pipeline tests
+poetry run pytest tests/intelligence/     # AI intelligence tests
+poetry run pytest tests/test_integration.py  # End-to-end pipeline tests
+poetry run pytest tests/test_connectors/  # Connector tests
+poetry run pytest tests/test_api/         # API tests
+
+# Run tests in watch mode during development
+poetry run ptw -- --testmon
+```
+
+### Test Coverage
+
+The comprehensive test suite includes:
+
+**🧠 Streaming Intelligence Tests:**
+- **Event Models**: Validation, serialization, platform-specific fields
+- **Event Manager**: Redis storage, queuing, user timelines, error handling
+- **Event Correlator**: Similarity algorithms, correlation groups, cross-platform linking
+- **Context Synthesizer**: Platform organization, insight extraction, narrative generation
+- **Action Generator**: GPT-4 integration, validation, link enhancement, daily limits
+- **Integration Tests**: End-to-end pipeline from events to actions
+
+**🏗️ Foundation Tests:**
+- **Connectors**: GitHub and Slack integration, webhook processing
+- **API Endpoints**: Health checks, configuration, connector management
+- **Chunking System**: Content processing and vector storage
+- **Infrastructure**: Redis connectivity, telemetry, error handling
+
+### Test Fixtures and Mocking
+
+Tests use comprehensive mocking for external dependencies:
+- **Redis**: Async Redis operations with realistic response simulation
+- **OpenAI API**: GPT-4 responses for action generation and validation
+- **Platform APIs**: Slack, GitHub, and Notion API responses
+- **WebSocket Connections**: Slack Socket Mode event simulation
 
 **What's Not Yet Implemented:**
 - Vector search and similarity matching endpoints
