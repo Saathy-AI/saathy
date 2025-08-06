@@ -78,6 +78,29 @@ class Settings(BaseSettings):
         default=300, description="Polling interval in seconds for Notion updates"
     )
 
+    # Redis settings for event streaming
+    redis_url: str = Field(
+        default="redis://localhost:6379",
+        description="Redis URL for event storage and queuing",
+    )
+    redis_password: Optional[SecretStr] = Field(
+        default=None, description="Redis password if authentication is required"
+    )
+
+    # Event streaming settings
+    event_correlation_window_minutes: int = Field(
+        default=30, description="Time window in minutes for correlating related events"
+    )
+    event_retention_days: int = Field(
+        default=30, description="Number of days to retain events in storage"
+    )
+    action_generation_enabled: bool = Field(
+        default=True, description="Enable GPT-4 powered action generation"
+    )
+    max_actions_per_user_per_day: int = Field(
+        default=20, description="Maximum actions to generate per user per day"
+    )
+
     # Embedding settings
     default_embedding_model: str = Field(
         default="all-MiniLM-L6-v2", description="Default embedding model to use"
@@ -227,6 +250,14 @@ class Settings(BaseSettings):
         if file_secret:
             return file_secret
         return self.notion_token.get_secret_value() if self.notion_token else None
+
+    @property
+    def redis_password_str(self) -> Optional[str]:
+        """Get Redis password as string if available."""
+        file_secret = self._read_secret_from_file("REDIS_PASSWORD")
+        if file_secret:
+            return file_secret
+        return self.redis_password.get_secret_value() if self.redis_password else None
 
 
 def get_settings() -> Settings:
