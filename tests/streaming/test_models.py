@@ -1,15 +1,15 @@
 """Test cases for streaming event models."""
 
-import pytest
 from datetime import datetime
-from typing import Dict, Any
+
+import pytest
 
 from src.saathy.streaming.models.events import (
     BaseEvent,
-    SlackEvent,
+    EventType,
     GitHubEvent,
     NotionEvent,
-    EventType,
+    SlackEvent,
 )
 
 
@@ -26,9 +26,9 @@ class TestEventModels:
             "platform": "slack",
             "raw_data": {"test": "data"},
         }
-        
+
         event = BaseEvent(**event_data)
-        
+
         assert event.event_id == "test_event_123"
         assert event.event_type == EventType.SLACK_MESSAGE
         assert event.platform == "slack"
@@ -51,9 +51,9 @@ class TestEventModels:
             "project_context": "saathy-core",
             "urgency_score": 0.8,
         }
-        
+
         event = BaseEvent(**event_data)
-        
+
         assert event.mentioned_users == ["alice", "bob"]
         assert event.keywords == ["review", "urgent"]
         assert event.project_context == "saathy-core"
@@ -76,9 +76,9 @@ class TestEventModels:
             "reactions": ["👍", "🎉"],
             "message_ts": "1234567890.456",
         }
-        
+
         event = SlackEvent(**slack_data)
-        
+
         assert event.channel_id == "C123456"
         assert event.channel_name == "general"
         assert event.message_text == "Hello team!"
@@ -102,9 +102,9 @@ class TestEventModels:
             "files_changed": ["src/main.py", "tests/test_main.py"],
             "commit_message": "Add new feature",
         }
-        
+
         event = GitHubEvent(**github_data)
-        
+
         assert event.repository == "org/repo"
         assert event.action == "opened"
         assert event.pr_number == 123
@@ -128,9 +128,9 @@ class TestEventModels:
             "properties_changed": ["Status", "Assignee"],
             "page_url": "https://notion.so/page123",
         }
-        
+
         event = NotionEvent(**notion_data)
-        
+
         assert event.page_id == "page123"
         assert event.page_title == "Project Requirements"
         assert event.database_id == "db456"
@@ -159,7 +159,7 @@ class TestEventModels:
             channel_id="C123",
             channel_name="test",
         )
-        
+
         json_data = event.model_dump_json()
         assert "test_serialize" in json_data
         assert "slack_message" in json_data
@@ -181,7 +181,7 @@ class TestEventModels:
         """Test event creation with valid platforms."""
         # Valid platforms should work
         valid_platforms = ["slack", "github", "notion"]
-        
+
         for platform in valid_platforms:
             event = BaseEvent(
                 event_id="test",

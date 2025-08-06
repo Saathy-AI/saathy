@@ -1,10 +1,11 @@
 """GPT-4 prompt templates for generating specific, actionable recommendations."""
 
-from typing import Dict, Any, List
+from typing import Any
 
-def get_action_generation_prompt(context_bundle: Dict[str, Any]) -> str:
+
+def get_action_generation_prompt(context_bundle: dict[str, Any]) -> str:
     """Generate the main prompt for GPT-4 action generation."""
-    
+
     prompt = f"""You are Saathy, an AI assistant that helps knowledge workers be more productive by analyzing their cross-platform activity and suggesting specific, actionable next steps.
 
 CONTEXT:
@@ -67,7 +68,7 @@ RESPONSE FORMAT (JSON):
 
 EXAMPLES OF GOOD ACTIONS:
 - "Review PR #123 for security vulnerability in auth module" (not "review code")
-- "Reply to Sarah's question about API deployment timeline in #eng-alerts" (not "respond to message")  
+- "Reply to Sarah's question about API deployment timeline in #eng-alerts" (not "respond to message")
 - "Update project status in Notion doc to reflect completed GitHub milestones" (not "update documentation")
 - "Follow up on blocked deployment mentioned in Slack after commit abc123" (not "follow up on issue")
 
@@ -89,110 +90,133 @@ Generate actions now based on the provided context:"""
 
     return prompt
 
-def _format_related_events(related_events: List[Dict[str, Any]]) -> str:
+
+def _format_related_events(related_events: list[dict[str, Any]]) -> str:
     """Format related events for the prompt."""
     if not related_events:
         return "None"
-    
+
     formatted = []
     for i, event in enumerate(related_events[:5]):  # Max 5 events
-        platform = event['platform']
-        timestamp = event['timestamp']
-        event_type = event.get('event_type', 'activity')
-        
+        platform = event["platform"]
+        timestamp = event["timestamp"]
+        event_type = event.get("event_type", "activity")
+
         # Add more specific details for each platform
         details = ""
         if platform == "slack":
-            channel = event.get('channel_name', 'unknown')
+            channel = event.get("channel_name", "unknown")
             details = f" in #{channel}"
-            if event.get('message_text'):
-                preview = event['message_text'][:50] + "..." if len(event['message_text']) > 50 else event['message_text']
-                details += f" - \"{preview}\""
+            if event.get("message_text"):
+                preview = (
+                    event["message_text"][:50] + "..."
+                    if len(event["message_text"]) > 50
+                    else event["message_text"]
+                )
+                details += f' - "{preview}"'
         elif platform == "github":
-            repo = event.get('repository', 'unknown')
-            if event.get('pr_number'):
+            repo = event.get("repository", "unknown")
+            if event.get("pr_number"):
                 details = f" PR #{event['pr_number']} in {repo}"
-            elif event.get('commit_sha'):
+            elif event.get("commit_sha"):
                 details = f" commit {event['commit_sha'][:8]} in {repo}"
             else:
                 details = f" in {repo}"
         elif platform == "notion":
-            title = event.get('page_title', 'unknown')
-            details = f" page \"{title}\""
-            
+            title = event.get("page_title", "unknown")
+            details = f' page "{title}"'
+
         formatted.append(f"{i+1}. {platform} {event_type}{details} at {timestamp}")
-    
+
     return "\n".join(formatted)
 
-def _format_insights(insights: List[str]) -> str:
+
+def _format_insights(insights: list[str]) -> str:
     """Format insights for the prompt."""
     if not insights:
         return "None identified"
     return "\n".join(f"- {insight}" for insight in insights)
 
-def _format_urgency_signals(urgency_signals: List[str]) -> str:
+
+def _format_urgency_signals(urgency_signals: list[str]) -> str:
     """Format urgency signals for the prompt."""
     if not urgency_signals:
         return "None detected"
     return "\n".join(f"- {signal}" for signal in urgency_signals)
 
-def _format_platform_data(platform_data: Dict[str, Any]) -> str:
+
+def _format_platform_data(platform_data: dict[str, Any]) -> str:
     """Format platform-specific data for the prompt."""
     formatted = []
-    
+
     for platform, data in platform_data.items():
-        if not data.get('events'):
+        if not data.get("events"):
             continue
-            
+
         platform_info = f"{platform.upper()}:\n"
-        
+
         if platform == "slack":
-            channels = data.get('channels', [])
-            messages = data.get('messages', [])
+            channels = data.get("channels", [])
+            messages = data.get("messages", [])
             if channels:
                 platform_info += f"  Channels: {', '.join(channels)}\n"
             if messages:
                 recent_messages = messages[-2:]  # Last 2 messages
                 for msg in recent_messages:
-                    preview = msg['text'][:100] + "..." if len(msg['text']) > 100 else msg['text']
+                    preview = (
+                        msg["text"][:100] + "..."
+                        if len(msg["text"]) > 100
+                        else msg["text"]
+                    )
                     platform_info += f"  Message in #{msg['channel']}: \"{preview}\"\n"
-        
+
         elif platform == "github":
-            repos = data.get('repos', [])
-            prs = data.get('prs', [])
-            commits = data.get('commits', [])
-            issues = data.get('issues', [])
-            
+            repos = data.get("repos", [])
+            prs = data.get("prs", [])
+            commits = data.get("commits", [])
+            issues = data.get("issues", [])
+
             if repos:
                 platform_info += f"  Repositories: {', '.join(repos)}\n"
             if prs:
-                pr_info = [f"PR #{pr['number']} ({pr['action']}) in {pr['repo']}" for pr in prs]
+                pr_info = [
+                    f"PR #{pr['number']} ({pr['action']}) in {pr['repo']}" for pr in prs
+                ]
                 platform_info += f"  Pull Requests: {', '.join(pr_info)}\n"
             if commits:
-                commit_info = [f"{commit['sha']} in {commit['repo']}" for commit in commits]
+                commit_info = [
+                    f"{commit['sha']} in {commit['repo']}" for commit in commits
+                ]
                 platform_info += f"  Commits: {', '.join(commit_info)}\n"
             if issues:
-                issue_info = [f"Issue #{issue['number']} ({issue['action']}) in {issue['repo']}" for issue in issues]
+                issue_info = [
+                    f"Issue #{issue['number']} ({issue['action']}) in {issue['repo']}"
+                    for issue in issues
+                ]
                 platform_info += f"  Issues: {', '.join(issue_info)}\n"
-        
+
         elif platform == "notion":
-            pages = data.get('pages', [])
-            changes = data.get('changes', [])
+            pages = data.get("pages", [])
+            changes = data.get("changes", [])
             if pages:
-                page_info = [f"\"{page['title']}\" ({page['change_type']})" for page in pages]
+                page_info = [
+                    f"\"{page['title']}\" ({page['change_type']})" for page in pages
+                ]
                 platform_info += f"  Pages: {', '.join(page_info)}\n"
             if changes:
                 unique_changes = list(set(changes))
                 platform_info += f"  Property changes: {', '.join(unique_changes)}\n"
-        
+
         formatted.append(platform_info)
-    
+
     return "\n".join(formatted) if formatted else "No detailed platform data available"
 
 
-def get_action_refinement_prompt(initial_actions: List[Dict], context: Dict[str, Any]) -> str:
+def get_action_refinement_prompt(
+    initial_actions: list[dict[str, Any]], context: dict[str, Any]
+) -> str:
     """Prompt to refine actions if they're too generic."""
-    
+
     prompt = f"""The following actions were generated but may be too generic. Please refine them to be more specific and actionable based on the context:
 
 CONTEXT REMINDER:
@@ -206,7 +230,7 @@ CURRENT ACTIONS:
 
 REFINEMENT REQUIREMENTS:
 1. More specific (include exact names, numbers, locations from the context)
-2. More actionable (clear next steps that can be completed immediately)  
+2. More actionable (clear next steps that can be completed immediately)
 3. More contextual (reference the specific events that happened)
 4. Include direct links where possible
 
@@ -219,23 +243,27 @@ Return the refined actions in the same JSON format, but with improved specificit
 
     return prompt
 
-def _format_actions_for_refinement(actions: List[Dict]) -> str:
+
+def _format_actions_for_refinement(actions: list[dict[str, Any]]) -> str:
     """Format actions for refinement prompt."""
     formatted = []
     for i, action in enumerate(actions, 1):
-        formatted.append(f"{i}. {action.get('title', 'No title')}: {action.get('description', 'No description')}")
+        formatted.append(
+            f"{i}. {action.get('title', 'No title')}: {action.get('description', 'No description')}"
+        )
     return "\n".join(formatted)
 
-def get_context_validation_prompt(context_bundle: Dict[str, Any]) -> str:
+
+def get_context_validation_prompt(context_bundle: dict[str, Any]) -> str:
     """Prompt to validate if context is sufficient for action generation."""
-    
+
     prompt = f"""Analyze the following context and determine if it's sufficient to generate useful, specific actions for the user.
 
 CONTEXT:
 {context_bundle['synthesized_context']}
 
 EVENTS: {len(context_bundle['related_events']) + 1} total events
-PLATFORMS: {', '.join(set(e['platform'] for e in [context_bundle['primary_event']] + context_bundle['related_events']))}
+PLATFORMS: {', '.join({e['platform'] for e in [context_bundle['primary_event']] + context_bundle['related_events']})}
 CORRELATION STRENGTH: {context_bundle.get('correlation_strength', 0.0):.2f}
 
 URGENCY SIGNALS:

@@ -2,15 +2,15 @@
 
 from .events import (
     BaseEvent,
-    SlackEvent,
+    EventType,
     GitHubEvent,
     NotionEvent,
-    EventType,
+    SlackEvent,
 )
 
 __all__ = [
     "BaseEvent",
-    "SlackEvent", 
+    "SlackEvent",
     "GitHubEvent",
     "NotionEvent",
     "EventType",

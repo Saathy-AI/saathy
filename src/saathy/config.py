@@ -80,12 +80,13 @@ class Settings(BaseSettings):
 
     # Redis settings for event streaming
     redis_url: str = Field(
-        default="redis://localhost:6379", description="Redis URL for event storage and queuing"
+        default="redis://localhost:6379",
+        description="Redis URL for event storage and queuing",
     )
     redis_password: Optional[SecretStr] = Field(
         default=None, description="Redis password if authentication is required"
     )
-    
+
     # Event streaming settings
     event_correlation_window_minutes: int = Field(
         default=30, description="Time window in minutes for correlating related events"

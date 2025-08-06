@@ -1,9 +1,10 @@
 """Shared pytest configuration and fixtures."""
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -18,17 +19,17 @@ def event_loop():
 def mock_redis_client():
     """Create a mock Redis client with common methods."""
     redis_mock = AsyncMock()
-    
+
     # Connection methods
     redis_mock.ping = AsyncMock(return_value=True)
     redis_mock.close = AsyncMock()
-    
+
     # Storage methods
     redis_mock.get = AsyncMock()
     redis_mock.set = AsyncMock()
     redis_mock.setex = AsyncMock()
     redis_mock.delete = AsyncMock()
-    
+
     # List methods
     redis_mock.lpush = AsyncMock()
     redis_mock.rpush = AsyncMock()
@@ -36,7 +37,7 @@ def mock_redis_client():
     redis_mock.rpop = AsyncMock()
     redis_mock.brpop = AsyncMock()
     redis_mock.llen = AsyncMock()
-    
+
     # Sorted set methods
     redis_mock.zadd = AsyncMock()
     redis_mock.zrem = AsyncMock()
@@ -45,13 +46,13 @@ def mock_redis_client():
     redis_mock.zrangebyscore = AsyncMock()
     redis_mock.zremrangebyrank = AsyncMock()
     redis_mock.zcount = AsyncMock()
-    
+
     # Key operations
     redis_mock.keys = AsyncMock()
     redis_mock.expire = AsyncMock()
     redis_mock.incr = AsyncMock()
     redis_mock.decr = AsyncMock()
-    
+
     return redis_mock
 
 
@@ -59,14 +60,14 @@ def mock_redis_client():
 def mock_openai_client():
     """Create a mock OpenAI client."""
     openai_mock = AsyncMock()
-    
+
     # Mock chat completions
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message.content = '{"test": "response"}'
-    
+
     openai_mock.chat.completions.create = AsyncMock(return_value=mock_response)
-    
+
     return openai_mock
 
 

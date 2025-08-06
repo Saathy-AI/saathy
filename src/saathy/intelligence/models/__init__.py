@@ -1,16 +1,16 @@
 """Data models for intelligence and action generation."""
 
 from .actions import (
+    ActionLink,
     ActionPriority,
     ActionType,
-    ActionLink,
-    GeneratedAction,
     ContextBundle,
+    GeneratedAction,
 )
 
 __all__ = [
     "ActionPriority",
-    "ActionType", 
+    "ActionType",
     "ActionLink",
     "GeneratedAction",
     "ContextBundle",
