@@ -20,9 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Runtime stage
 FROM python:3.11-slim AS runtime
 
-# Install runtime dependencies
+# Install runtime dependencies (include bash for start.sh)
 RUN apt-get update && apt-get install -y \
-    curl \
+    curl bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -44,8 +44,8 @@ COPY start.sh ./start.sh
 # Set Python path to include the src directory
 ENV PYTHONPATH=/app/src:$PYTHONPATH
 
-# Make startup script executable
-RUN chmod +x start.sh
+# Normalize line endings (handle Windows CRLF) and make executable
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # Change ownership to app user
 RUN chown -R app:app /app

@@ -275,7 +275,7 @@ PREDEFINED_MODELS = {
         description="High-quality general-purpose model",
     ),
     "codebert-base": ModelMetadata(
-        name="microsoft/codebert-base",
+        name="flax-sentence-embeddings/st-codesearch-distilroberta-base",
         dimensions=768,
         max_context_length=512,
         model_type="local",
@@ -308,7 +308,7 @@ def create_default_registry() -> ModelRegistry:
     # Add local models
     for model_name, metadata in PREDEFINED_MODELS.items():
         if metadata.model_type == "local":
-            model = SentenceTransformerModel(metadata, model_name)
+            model = SentenceTransformerModel(metadata, metadata.name)
             registry.register_model(model)
 
     # Add OpenAI model if API key is available

@@ -232,7 +232,9 @@ def get_vector_repo() -> VectorRepository:
         except (ValueError, IndexError):
             port = 6333
 
+        # Prefer using full URL when provided to avoid protocol ambiguity
         qdrant_client = QdrantClientWrapper(
+            url=str(settings.qdrant_url),
             host=host,
             port=port,
             collection_name=settings.qdrant_collection_name,

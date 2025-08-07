@@ -22,6 +22,7 @@ class QdrantClientWrapper:
 
     def __init__(
         self,
+        url: Optional[str] = None,
         host: str = "localhost",
         port: int = 6333,
         timeout: float = 30.0,
@@ -44,6 +45,7 @@ class QdrantClientWrapper:
             vector_size: Vector dimensions
             distance: Distance metric (Cosine, Euclidean, Dot)
         """
+        self.url = url
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -70,15 +72,22 @@ class QdrantClientWrapper:
         """Get or create Qdrant client with connection pooling."""
         if self._client is None:
             try:
-                client_kwargs = {
-                    "host": self.host,
-                    "port": self.port,
-                    "timeout": self.timeout,
-                }
-                if self.api_key:
-                    client_kwargs["api_key"] = self.api_key
-
-                self._client = QdrantClient(**client_kwargs)
+                if self.url:
+                    client_kwargs = {"url": self.url, "timeout": self.timeout}
+                    if self.api_key:
+                        client_kwargs["api_key"] = self.api_key
+                    self._client = QdrantClient(**client_kwargs)
+                else:
+                    client_kwargs = {
+                        "host": self.host,
+                        "port": self.port,
+                        "timeout": self.timeout,
+                        # Force HTTP unless explicitly using a URL with https
+                        "https": False,
+                    }
+                    if self.api_key:
+                        client_kwargs["api_key"] = self.api_key
+                    self._client = QdrantClient(**client_kwargs)
                 logger.debug("Created new Qdrant client connection")
             except Exception as e:
                 logger.error("Failed to create Qdrant client", error=str(e))
