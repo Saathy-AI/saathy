@@ -1,28 +1,30 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import Dict, Any, List
 import logging
-from datetime import datetime
 import os
+import smtplib
+from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-class EmailNotifier:
-    def __init__(self, 
-                 smtp_server: str = None,
-                 smtp_port: int = 587,
-                 username: str = None,
-                 password: str = None):
-        self.smtp_server = smtp_server or os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-        self.smtp_port = smtp_port or int(os.getenv('SMTP_PORT', '587'))
-        self.username = username or os.getenv('SMTP_USERNAME')
-        self.password = password or os.getenv('SMTP_PASSWORD')
 
-    async def send_action_notification(self, 
-                                     user_id: str, 
-                                     action_data: Dict[str, Any], 
-                                     content: Dict[str, str]) -> bool:
+class EmailNotifier:
+    def __init__(
+        self,
+        smtp_server: str = None,
+        smtp_port: int = 587,
+        username: str = None,
+        password: str = None,
+    ):
+        self.smtp_server = smtp_server or os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = smtp_port or int(os.getenv("SMTP_PORT", "587"))
+        self.username = username or os.getenv("SMTP_USERNAME")
+        self.password = password or os.getenv("SMTP_PASSWORD")
+
+    async def send_action_notification(
+        self, user_id: str, action_data: dict[str, Any], content: dict[str, str]
+    ) -> bool:
         """Send single action notification email"""
         try:
             user_email = await self.get_user_email(user_id)
@@ -32,22 +34,24 @@ class EmailNotifier:
 
             # Create email
             msg = MIMEMultipart()
-            msg['From'] = self.username
-            msg['To'] = user_email
-            msg['Subject'] = content['subject']
-            
+            msg["From"] = self.username
+            msg["To"] = user_email
+            msg["Subject"] = content["subject"]
+
             # Create email body
             body = self.create_single_action_email_body(action_data, content)
-            msg.attach(MIMEText(body, 'html'))
-            
+            msg.attach(MIMEText(body, "html"))
+
             # Send email
             return await self.send_email(msg)
-            
+
         except Exception as e:
             logger.error(f"Error sending action notification email: {e}")
             return False
 
-    async def send_batch_notification(self, user_id: str, actions: List[Dict[str, Any]]) -> bool:
+    async def send_batch_notification(
+        self, user_id: str, actions: list[dict[str, Any]]
+    ) -> bool:
         """Send batch notification email with multiple actions"""
         try:
             user_email = await self.get_user_email(user_id)
@@ -56,26 +60,30 @@ class EmailNotifier:
 
             # Create email
             msg = MIMEMultipart()
-            msg['From'] = self.username
-            msg['To'] = user_email
-            msg['Subject'] = f"⚡ {len(actions)} actions need your attention"
-            
+            msg["From"] = self.username
+            msg["To"] = user_email
+            msg["Subject"] = f"⚡ {len(actions)} actions need your attention"
+
             # Create batch email body
             body = self.create_batch_email_body(actions)
-            msg.attach(MIMEText(body, 'html'))
-            
+            msg.attach(MIMEText(body, "html"))
+
             return await self.send_email(msg)
-            
+
         except Exception as e:
             logger.error(f"Error sending batch notification email: {e}")
             return False
 
-    def create_single_action_email_body(self, action_data: Dict[str, Any], content: Dict[str, str]) -> str:
+    def create_single_action_email_body(
+        self, action_data: dict[str, Any], content: dict[str, str]
+    ) -> str:
         """Create HTML email body for single action"""
-        
+
         action_links_html = ""
-        for link in content.get('action_links', []):
-            platform_emoji = {'slack': '💬', 'github': '🐙', 'notion': '📝'}.get(link['platform'], '🔗')
+        for link in content.get("action_links", []):
+            platform_emoji = {"slack": "💬", "github": "🐙", "notion": "📝"}.get(
+                link["platform"], "🔗"
+            )
             action_links_html += f"""
             <tr>
                 <td style="padding: 8px 0;">
@@ -87,12 +95,12 @@ class EmailNotifier:
             """
 
         priority_color = {
-            'urgent': '#dc3545',
-            'high': '#fd7e14', 
-            'medium': '#ffc107',
-            'low': '#17a2b8',
-            'fyi': '#6c757d'
-        }.get(action_data.get('priority', 'medium'), '#ffc107')
+            "urgent": "#dc3545",
+            "high": "#fd7e14",
+            "medium": "#ffc107",
+            "low": "#17a2b8",
+            "fyi": "#6c757d",
+        }.get(action_data.get("priority", "medium"), "#ffc107")
 
         html_body = f"""
         <!DOCTYPE html>
@@ -126,21 +134,21 @@ class EmailNotifier:
                                 ~{action_data.get('estimated_time_minutes', 15)} minutes
                             </span>
                         </div>
-                        
+
                         <p style="color: #495057; margin-bottom: 20px;">
                             {action_data.get('description', '')}
                         </p>
-                        
+
                         <div class="reason-box">
                             <strong>Why now:</strong> {action_data.get('reasoning', '')}
                         </div>
-                        
+
                         <table style="margin-top: 20px;">
                             {action_links_html}
                         </table>
                     </div>
                 </div>
-                
+
                 <div class="footer">
                     <p>Generated at {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}</p>
                     <p><a href="#" style="color: #4F46E5;">Manage notification preferences</a></p>
@@ -149,24 +157,27 @@ class EmailNotifier:
         </body>
         </html>
         """
-        
+
         return html_body
 
-    def create_batch_email_body(self, actions: List[Dict[str, Any]]) -> str:
+    def create_batch_email_body(self, actions: list[dict[str, Any]]) -> str:
         """Create HTML email body for batch actions"""
-        
+
         actions_html = ""
         total_time = 0
-        
-        for i, action in enumerate(actions[:5], 1):  # Max 5 actions in email
+
+        for _i, action in enumerate(actions[:5], 1):  # Max 5 actions in email
             priority_color = {
-                'urgent': '#dc3545', 'high': '#fd7e14', 'medium': '#ffc107', 
-                'low': '#17a2b8', 'fyi': '#6c757d'
-            }.get(action.get('priority', 'medium'), '#ffc107')
-            
-            time_estimate = action.get('estimated_time_minutes', 15)
+                "urgent": "#dc3545",
+                "high": "#fd7e14",
+                "medium": "#ffc107",
+                "low": "#17a2b8",
+                "fyi": "#6c757d",
+            }.get(action.get("priority", "medium"), "#ffc107")
+
+            time_estimate = action.get("estimated_time_minutes", 15)
             total_time += time_estimate
-            
+
             actions_html += f"""
             <div style="background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid {priority_color};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -206,14 +217,14 @@ class EmailNotifier:
                         <h2 style="margin: 0; color: #212529;">{len(actions)} actions need your attention</h2>
                         <p style="margin: 10px 0 0 0; color: #6c757d;">Estimated total time: {total_time} minutes</p>
                     </div>
-                    
+
                     {actions_html}
-                    
+
                     <div style="text-align: center;">
                         <a href="#" class="cta-button">View All Actions in Dashboard</a>
                     </div>
                 </div>
-                
+
                 <div class="footer">
                     <p>Generated at {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}</p>
                     <p><a href="#" style="color: #4F46E5;">Manage notification preferences</a></p>
@@ -222,7 +233,7 @@ class EmailNotifier:
         </body>
         </html>
         """
-        
+
         return html_body
 
     async def send_email(self, msg: MIMEMultipart) -> bool:
@@ -232,10 +243,10 @@ class EmailNotifier:
                 server.starttls()
                 server.login(self.username, self.password)
                 server.send_message(msg)
-            
+
             logger.info(f"Email sent successfully to {msg['To']}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
             return False

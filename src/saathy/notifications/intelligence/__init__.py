@@ -1,6 +1,6 @@
 """Notification intelligence components"""
 
-from .timing_optimizer import TimingOptimizer
 from .frequency_controller import FrequencyController
+from .timing_optimizer import TimingOptimizer
 
-__all__ = ['TimingOptimizer', 'FrequencyController']
+__all__ = ["TimingOptimizer", "FrequencyController"]

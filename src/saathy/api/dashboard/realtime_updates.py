@@ -1,14 +1,14 @@
-from fastapi import WebSocket, WebSocketDisconnect
-from typing import Dict, Set
-import asyncio
 import json
 import logging
 
+from fastapi import WebSocket, WebSocketDisconnect
+
 logger = logging.getLogger(__name__)
+
 
 class WebSocketManager:
     def __init__(self):
-        self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.active_connections: dict[str, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
@@ -30,14 +30,16 @@ class WebSocketManager:
             for websocket in self.active_connections[user_id]:
                 try:
                     await websocket.send_text(json.dumps(message))
-                except:
+                except Exception:
                     disconnected_websockets.append(websocket)
-            
+
             # Clean up disconnected websockets
             for ws in disconnected_websockets:
                 self.active_connections[user_id].discard(ws)
 
+
 manager = WebSocketManager()
+
 
 async def websocket_endpoint(websocket: WebSocket, user_id: str):
     await manager.connect(websocket, user_id)
@@ -48,9 +50,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
 
+
 # Function to notify users of new actions (called from action generator)
 async def notify_new_action(user_id: str, action_data: dict):
-    await manager.send_to_user(user_id, {
-        "type": "new_action",
-        "action": action_data
-    })
+    await manager.send_to_user(user_id, {"type": "new_action", "action": action_data})
