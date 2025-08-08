@@ -53,7 +53,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     <FiExternalLink className="w-3 h-3" />
                   </a>
                 ),
-                code: ({ node, inline, ...props }) =>
+                code: ({ node, inline, ...props }: any) =>
                   inline ? (
                     <code
                       {...props}

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FiMessageSquare, FiX, FiRefreshCw } from 'react-icons/fi';
+import { FiMessageSquare, FiRefreshCw } from 'react-icons/fi';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { chatAPI } from '../services/api';
 import { ChatMessage, WebSocketMessage } from '../types/chat';
-import clsx from 'clsx';
 
 export const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -66,6 +65,9 @@ export const ChatInterface: React.FC = () => {
     
     try {
       const session = await chatAPI.createSession();
+      if (!session.sessionId) {
+        throw new Error('Failed to create session: no session ID returned');
+      }
       setSessionId(session.sessionId);
       
       // Add welcome message
@@ -126,9 +128,9 @@ export const ChatInterface: React.FC = () => {
       
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
-        content: response.message,
+        content: response.message || 'No response received',
         role: 'assistant',
-        timestamp: new Date(response.timestamp),
+        timestamp: new Date(response.timestamp || new Date()),
         contextSources: response.contextSources,
       };
       

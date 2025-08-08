@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_api_key: Optional[str] = None
+    qdrant_url: Optional[str] = None
+    qdrant_collection_name: str = "documents"
+    qdrant_vector_size: int = 1536
 
     # OpenAI
     openai_api_key: str
