@@ -232,7 +232,9 @@ async def update_action_status(
         raise
     except Exception as e:
         logger.error(f"Error updating action status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update action status") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to update action status"
+        ) from e
 
 
 @router.get("/{action_id}")
@@ -252,7 +254,9 @@ async def get_action_detail(
         raise
     except Exception as e:
         logger.error(f"Error getting action detail: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve action details") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve action details"
+        ) from e
 
 
 @router.post("/{action_id}/track")
@@ -269,4 +273,6 @@ async def track_action_interaction(
 
     except Exception as e:
         logger.error(f"Error tracking action interaction: {e}")
-        raise HTTPException(status_code=500, detail="Failed to track interaction") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to track interaction"
+        ) from e

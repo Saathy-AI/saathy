@@ -171,6 +171,15 @@ class ContentProcessor:
             else:
                 embeddings = embedding_result.embeddings
 
+            # Ensure embeddings is a flat list of floats (not nested)
+            if (
+                isinstance(embeddings, list)
+                and len(embeddings) > 0
+                and isinstance(embeddings[0], list)
+            ):
+                # If it's a nested list (2D array), flatten it
+                embeddings = embeddings[0]
+
             if not embeddings:
                 return {
                     "id": content.id,
@@ -205,8 +214,14 @@ class ContentProcessor:
     ) -> VectorDocument:
         """Prepare vector data for storage in Qdrant."""
 
-        # Use content.id directly for backward compatibility with tests
-        content_id = content.id
+        # Generate a valid Qdrant point ID (UUID) from content
+        import uuid
+
+        content_hash = hashlib.sha256(
+            f"{content.source}_{content.id}".encode()
+        ).hexdigest()
+        # Use first 16 chars of hash to create a deterministic UUID
+        point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, content_hash))
 
         # Prepare metadata for Qdrant
         qdrant_metadata = {
@@ -215,6 +230,7 @@ class ContentProcessor:
             "content_type": content.content_type.value,
             "timestamp": content.timestamp.isoformat(),
             "content_preview": content.content[:200],  # First 200 chars for preview
+            "original_id": content.id,  # Store original ID in metadata
             # Slack-specific metadata
             "channel_id": content.metadata.get("channel_id"),
             "channel_name": content.metadata.get("channel_name"),
@@ -231,7 +247,7 @@ class ContentProcessor:
         }
 
         return VectorDocument(
-            id=content_id,
+            id=point_id,
             content=content.content,
             embedding=embeddings,
             metadata=qdrant_metadata,
@@ -243,10 +259,14 @@ class ContentProcessor:
     ) -> dict[str, Any]:
         """Prepare vector data in dict format for backward compatibility."""
 
-        # Create deterministic ID based on content
+        # Generate a valid Qdrant point ID (UUID) from content
+        import uuid
+
         content_hash = hashlib.sha256(
             f"{content.source}_{content.id}".encode()
-        ).hexdigest()[:16]
+        ).hexdigest()
+        # Use hash to create a deterministic UUID
+        point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, content_hash))
 
         # Prepare metadata for Qdrant
         qdrant_metadata = {
@@ -255,6 +275,7 @@ class ContentProcessor:
             "content_type": content.content_type.value,
             "timestamp": content.timestamp.isoformat(),
             "content_preview": content.content[:200],  # First 200 chars for preview
+            "original_id": content.id,  # Store original ID in metadata
             # Slack-specific metadata
             "channel_id": content.metadata.get("channel_id"),
             "channel_name": content.metadata.get("channel_name"),
@@ -277,7 +298,7 @@ class ContentProcessor:
             embeddings = embedding_result.embeddings
 
         return {
-            "id": content_hash,
+            "id": point_id,
             "vector": embeddings,
             "payload": qdrant_metadata,
         }

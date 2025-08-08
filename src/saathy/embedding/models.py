@@ -68,30 +68,42 @@ class SentenceTransformerModel(EmbeddingModel):
     async def load(self) -> None:
         """Load the sentence transformer model."""
         try:
-            # Local imports to avoid import-time dependency explosions
-            import torch  # type: ignore
-            from sentence_transformers import SentenceTransformer  # type: ignore
+            logger.info(f"Loading SentenceTransformer model: {self.model_name}")
 
-            # Detect GPU availability
-            if torch.cuda.is_available():
-                self._device = "cuda"
-                logger.info(f"Using GPU for model {self.metadata.name}")
-            else:
-                self._device = "cpu"
-                logger.info(f"Using CPU for model {self.metadata.name}")
+            # Check if sentence_transformers is available
+            try:
+                from sentence_transformers import SentenceTransformer
+            except ImportError as e:
+                logger.error(f"sentence_transformers package not available: {e}")
+                raise ImportError(
+                    f"sentence_transformers package not available: {e}"
+                ) from e
 
-            # Load model with device specification
-            self._model = SentenceTransformer(self.model_name, device=self._device)
+            # Load the model
+            self._model = SentenceTransformer(self.model_name)
+
+            # Determine device
+            import torch
+
+            self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            logger.info(f"Model {self.model_name} loaded on device: {self._device}")
 
             # Warm up the model
             await self._warmup()
 
             self._is_loaded = True
-            logger.info(f"Successfully loaded model {self.metadata.name}")
+            logger.info(
+                f"SentenceTransformer model {self.model_name} loaded successfully"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to load model {self.metadata.name}: {e}")
-            raise RuntimeError(f"Failed to load model {self.metadata.name}: {e}") from e
+            logger.error(
+                f"Failed to load SentenceTransformer model {self.model_name}: {e}"
+            )
+            self._is_loaded = False
+            raise RuntimeError(
+                f"Failed to load SentenceTransformer model {self.model_name}: {e}"
+            ) from e
 
     async def _warmup(self) -> None:
         """Warm up the model with sample input."""

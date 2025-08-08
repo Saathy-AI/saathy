@@ -174,7 +174,9 @@ async def get_preferences(user_id: str):
 
     except Exception as e:
         logger.error(f"Error getting preferences: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve preferences") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve preferences"
+        ) from e
 
 
 @router.put("/{user_id}")
@@ -192,7 +194,9 @@ async def update_preferences(user_id: str, preferences: dict[str, Any]):
         raise
     except Exception as e:
         logger.error(f"Error updating preferences: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update preferences") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to update preferences"
+        ) from e
 
 
 @router.post("/{user_id}/reset")
@@ -206,4 +210,6 @@ async def reset_preferences(user_id: str):
 
     except Exception as e:
         logger.error(f"Error resetting preferences: {e}")
-        raise HTTPException(status_code=500, detail="Failed to reset preferences") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to reset preferences"
+        ) from e
