@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
-import torch
-from sentence_transformers import SentenceTransformer
 
 from ..config import get_settings
 
@@ -63,11 +61,17 @@ class SentenceTransformerModel(EmbeddingModel):
     def __init__(self, metadata: ModelMetadata, model_name: str):
         super().__init__(metadata)
         self.model_name = model_name
-        self._model: Optional[SentenceTransformer] = None
+        # Deferred import: avoid importing heavy libs at module import time
+        # Use Any for model type to keep imports lazy and prevent startup failures
+        self._model: Optional[Any] = None
 
     async def load(self) -> None:
         """Load the sentence transformer model."""
         try:
+            # Local imports to avoid import-time dependency explosions
+            import torch  # type: ignore
+            from sentence_transformers import SentenceTransformer  # type: ignore
+
             # Detect GPU availability
             if torch.cuda.is_available():
                 self._device = "cuda"
@@ -87,7 +91,7 @@ class SentenceTransformerModel(EmbeddingModel):
 
         except Exception as e:
             logger.error(f"Failed to load model {self.metadata.name}: {e}")
-            raise
+            raise RuntimeError(f"Failed to load model {self.metadata.name}: {e}") from e
 
     async def _warmup(self) -> None:
         """Warm up the model with sample input."""
@@ -113,7 +117,9 @@ class SentenceTransformerModel(EmbeddingModel):
             return embeddings
         except Exception as e:
             logger.error(f"Embedding generation failed for {self.metadata.name}: {e}")
-            raise
+            raise RuntimeError(
+                f"Embedding generation failed for {self.metadata.name}: {e}"
+            ) from e
 
 
 class OpenAIModel(EmbeddingModel):

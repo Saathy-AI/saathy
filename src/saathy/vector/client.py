@@ -73,7 +73,12 @@ class QdrantClientWrapper:
         if self._client is None:
             try:
                 if self.url:
-                    client_kwargs = {"url": self.url, "timeout": self.timeout}
+                    client_kwargs = {
+                        "url": self.url,
+                        "timeout": self.timeout,
+                        # Avoid strict version checks when server/client minor differ
+                        "check_compatibility": False,
+                    }
                     if self.api_key:
                         client_kwargs["api_key"] = self.api_key
                     self._client = QdrantClient(**client_kwargs)
@@ -84,6 +89,8 @@ class QdrantClientWrapper:
                         "timeout": self.timeout,
                         # Force HTTP unless explicitly using a URL with https
                         "https": False,
+                        # Avoid strict version checks when server/client minor differ
+                        "check_compatibility": False,
                     }
                     if self.api_key:
                         client_kwargs["api_key"] = self.api_key
