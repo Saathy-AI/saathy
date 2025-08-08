@@ -1,0 +1,102 @@
+site_name: Saathy Documentation
+site_description: AI copilot that proactively shadows your work
+site_author: Saathy Team
+site_url: https://docs.saathy.ai
+
+repo_name: saathy/saathy
+repo_url: https://github.com/saathy/saathy
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Configuration: getting-started/configuration.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Services: architecture/services.md
+    - Data Flow: architecture/data-flow.md
+    - Decisions: architecture/decisions/index.md
+  - API Reference:
+    - Core API: api/core-api.md
+    - Conversational AI: api/conversational-ai.md
+    - WebSocket Events: api/websocket.md
+  - User Guides:
+    - Connectors:
+      - Overview: user-guides/connectors/index.md
+      - GitHub: user-guides/connectors/github.md
+      - Slack: user-guides/connectors/slack.md
+      - Notion: user-guides/connectors/notion.md
+    - Intelligence: user-guides/intelligence.md
+    - Troubleshooting: user-guides/troubleshooting.md
+  - Development:
+    - Setup: development/setup.md
+    - Testing: development/testing.md
+    - Contributing: development/contributing.md
+  - Deployment:
+    - Docker: deployment/docker.md
+    - Production: deployment/PRODUCTION_SETUP.md
+    - Monitoring: deployment/monitoring.md
+    - Migration: deployment/MIGRATION_GUIDE.md
+
+plugins:
+  - search
+  - mermaid2
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/saathy/saathy
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/saathy_ai
+  version:
+    provider: mike

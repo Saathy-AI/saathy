@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "saathy-core"
+version = "0.1.0"
+description = "Core models, interfaces, and utilities for Saathy"
+authors = ["Saathy Team"]
+readme = "README.md"
+packages = [{include = "saathy_core", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pydantic = "^2.0"
+pydantic-settings = "^2.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-asyncio = "^0.23"
+black = "^23.0"
+ruff = "^0.4"
+mypy = "^1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
