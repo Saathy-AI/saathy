@@ -3,13 +3,15 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 
 from ..dependencies import (
     VectorStoreDep,
     ConnectorManagerDep,
     CacheDep,
     SettingsDep,
+    IntelligenceDep,
 )
 from ..config import Settings
 
@@ -88,11 +90,14 @@ async def readiness_check(
     active_connectors = await connector_manager.get_active_connectors()
     
     if not active_connectors:
-        return {
-            "status": "not_ready",
-            "message": "No active connectors",
-            "timestamp": datetime.utcnow().isoformat(),
-        }
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "not_ready",
+                "message": "No active connectors",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
     
     return {
         "status": "ready",
@@ -112,4 +117,51 @@ async def liveness_check() -> Dict[str, str]:
     return {
         "status": "alive",
         "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+@router.get("/config", response_model=Dict[str, Any])
+async def get_config(settings: Settings = Depends(SettingsDep)) -> Dict[str, Any]:
+    """
+    Get non-sensitive configuration information.
+    
+    Returns:
+        Safe configuration values
+    """
+    return {
+        "app_name": settings.app_name,
+        "environment": settings.environment,
+        "debug": settings.debug,
+        "log_level": settings.log_level,
+        "features": {
+            "github_enabled": settings.github_enabled,
+            "slack_enabled": settings.slack_enabled,
+            "notion_enabled": settings.notion_enabled,
+            "intelligence_enabled": settings.intelligence_enabled,
+            "enterprise_features_enabled": settings.enterprise_features_enabled,
+        },
+        "connectors": {
+            "github": {
+                "configured": settings.github_configured,
+                "owner": settings.github_owner,
+                "repo": settings.github_repo,
+            },
+            "slack": {
+                "configured": settings.slack_configured,
+                "channels": settings.slack_default_channels,
+            },
+            "notion": {
+                "configured": settings.notion_configured,
+                "poll_interval": settings.notion_poll_interval,
+            },
+        },
+        "vector_store": {
+            "url": str(settings.qdrant_url),
+            "collection": settings.qdrant_collection_name,
+            "vector_size": settings.qdrant_vector_size,
+        },
+        "embedding": {
+            "model": settings.embedding_model,
+            "batch_size": settings.embedding_batch_size,
+        },
     }
