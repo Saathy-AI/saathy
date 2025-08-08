@@ -53,6 +53,7 @@ class ChatTurnDB(Base):
     context_used = Column(JSON, default=dict)
     retrieval_strategy = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    metadata = Column(JSON, default=dict)
 
     # Relationships
     session = relationship("ChatSessionDB", back_populates="turns")
@@ -67,15 +68,23 @@ class ChatTurn(BaseModel):
     timestamp: datetime
     context_used: dict = Field(default_factory=dict)
     retrieval_strategy: Optional[str] = None
+    metadata: Optional[dict] = Field(default_factory=dict)
 
     class Config:
         from_attributes = True
 
 
-class ChatSession(BaseModel):
-    """Pydantic model for chat sessions"""
+class ConversationTurn(ChatTurn):
+    """Compatibility alias used in tests"""
 
-    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    pass
+
+
+class ChatSession(BaseModel):
+    """Pydantic model for chat sessions supporting v1 and v2 shapes"""
+
+    id: Optional[str] = None
+    session_id: Optional[str] = None
     user_id: str
     status: SessionStatus = SessionStatus.ACTIVE
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -85,6 +94,10 @@ class ChatSession(BaseModel):
     expires_at: Optional[datetime] = None
 
     def __init__(self, **data):
+        # Synchronize id and session_id
+        sid = data.get("session_id") or data.get("id") or str(uuid.uuid4())
+        data["session_id"] = sid
+        data["id"] = sid
         super().__init__(**data)
         if not self.expires_at:
             self.expires_at = datetime.utcnow() + timedelta(hours=24)
@@ -94,17 +107,27 @@ class ChatSession(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    """Input model for new chat messages"""
+    """Input model for new chat messages (v1/v2 compatible)"""
 
-    message: str
+    message: Optional[str] = None  # v1
+    content: Optional[str] = None  # v2
     session_id: Optional[str] = None
+
+    def get_text(self) -> str:
+        return self.content or self.message or ""
 
 
 class ChatResponse(BaseModel):
-    """Response model for chat messages"""
+    """Response model for chat messages (v1/v2 compatible)"""
 
-    session_id: str
-    message: str
+    # v1 fields
+    session_id: Optional[str] = None
+    message: Optional[str] = None
     context_sources: list[dict] = Field(default_factory=list)
-    retrieval_strategy: str = "hybrid"
+    retrieval_strategy: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    # v2 fields
+    response: Optional[str] = None
+    context_used: list[dict] = Field(default_factory=list)
+    metadata: Optional[dict] = None

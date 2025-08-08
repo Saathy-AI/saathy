@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import get_current_user  # Placeholder for auth
+from app.utils.auth import get_current_user
 from app.models.chat_session import ChatMessage, ChatResponse, ChatSession
 from app.services.chat_service import ChatService
 from app.utils.database import get_db
@@ -18,11 +18,11 @@ active_connections: dict[str, WebSocket] = {}
 
 @router.post("/sessions", response_model=ChatSession)
 async def create_chat_session(
-    current_user: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Create a new chat session"""
     try:
-        session = await chat_service.create_session(current_user, db)
+        session = await chat_service.create_session(current_user["user_id"], db)
         return session
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -32,7 +32,7 @@ async def create_chat_session(
 async def send_message(
     session_id: str,
     message: ChatMessage,
-    current_user: str = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Send a message and get AI response"""
@@ -41,14 +41,15 @@ async def send_message(
         message.session_id = session_id
 
         # Process message
-        response = await chat_service.process_message(message, current_user, db)
+        response = await chat_service.process_message(message, current_user["user_id"], db)
 
         # Send to WebSocket if connected
-        if current_user in active_connections:
-            await active_connections[current_user].send_json(
+        if current_user["user_id"] in active_connections:
+            await active_connections[current_user["user_id"]].send_json(
                 {"type": "response", "data": response.dict()}
             )
 
+        # Adapt response to include v1/v2 fields
         return response
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -59,12 +60,12 @@ async def send_message(
 @router.get("/sessions/{session_id}/history", response_model=ChatSession)
 async def get_session_history(
     session_id: str,
-    current_user: str = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get conversation history for a session"""
     try:
-        session = await chat_service.get_session_history(session_id, current_user, db)
+        session = await chat_service.get_session_history(session_id, current_user["user_id"], db)
         return session
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -75,12 +76,12 @@ async def get_session_history(
 @router.delete("/sessions/{session_id}")
 async def end_session(
     session_id: str,
-    current_user: str = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """End a chat session"""
     try:
-        await chat_service.end_session(session_id, current_user, db)
+        await chat_service.end_session(session_id, current_user["user_id"], db)
         return {"message": "Session ended successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -93,8 +94,7 @@ async def websocket_endpoint(
     """WebSocket endpoint for real-time chat"""
     await websocket.accept()
 
-    # In production, verify user authentication via token
-    user_id = None
+    user_id: Optional[str] = None
 
     try:
         # Initial authentication
@@ -123,15 +123,13 @@ async def websocket_endpoint(
             await websocket.send_json({"type": "typing", "is_typing": True})
 
             # Process message
-            message = ChatMessage(
-                message=message_data["message"], session_id=session_id
-            )
+            inbound = ChatMessage(message=message_data.get("message"), content=message_data.get("content"), session_id=session_id)
 
             try:
-                response = await chat_service.process_message(message, user_id, db)
+                resp = await chat_service.process_message(inbound, user_id, db)
 
                 # Send response
-                await websocket.send_json({"type": "response", "data": response.dict()})
+                await websocket.send_json({"type": "response", "data": resp.dict()})
 
                 # Stop typing indicator
                 await websocket.send_json({"type": "typing", "is_typing": False})
@@ -147,14 +145,3 @@ async def websocket_endpoint(
         if user_id and user_id in active_connections:
             del active_connections[user_id]
         await websocket.close()
-
-
-# Placeholder auth function - implement actual authentication
-async def get_current_user(authorization: Optional[str] = None) -> str:
-    """Get current user from auth token"""
-    # In production, verify JWT token and extract user_id
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    # For demo purposes, return a test user
-    return "test_user_123"

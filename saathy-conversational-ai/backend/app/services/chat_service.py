@@ -59,7 +59,7 @@ class ChatService:
 
         # Return Pydantic model
         return ChatSession(
-            session_id=db_session.id,
+            id=str(db_session.id),
             user_id=user_id,
             status=SessionStatus.ACTIVE,
             created_at=db_session.created_at,
@@ -88,8 +88,9 @@ class ChatService:
         session_context = await self._get_session_context(session.session_id)
 
         # Analyze user query
+        user_text = message.get_text()
         analysis_result = await self.analyzer.analyze_query(
-            message.message, user_id, session_context
+            user_text, user_id, session_context
         )
         info_needs = analysis_result.information_needs
 
@@ -100,13 +101,13 @@ class ChatService:
 
         # Generate response
         response_text = await self._generate_response(
-            message.message, info_needs, context, session_context
+            user_text, info_needs, context, session_context
         )
 
         # Save turn to database
         await self._save_turn(
             session.session_id,
-            message.message,
+            user_text,
             response_text,
             context,
             analysis_result.suggested_retrieval_strategies[0],
@@ -116,11 +117,18 @@ class ChatService:
         # Update session context for next turn
         await self._update_session_context(session.session_id, info_needs, context)
 
+        # Build v1/v2 compatible response
         return ChatResponse(
             session_id=session.session_id,
             message=response_text,
             context_sources=self._extract_sources(context),
             retrieval_strategy=analysis_result.suggested_retrieval_strategies[0],
+            response=response_text,
+            context_used=context.get("content", []) + context.get("events", []) + context.get("actions", []),
+            metadata={
+                "analysis": analysis_result.dict(),
+                "query_intent": info_needs.intent.value,
+            },
         )
 
     async def get_session_history(
