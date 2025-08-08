@@ -1,9 +1,10 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+
 import redis.asyncio as redis
-from typing import AsyncGenerator
 from config.settings import get_settings
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 settings = get_settings()
 
@@ -16,17 +17,11 @@ engine = create_async_engine(
     pool_pre_ping=True,
 )
 
-AsyncSessionLocal = sessionmaker(
-    engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
-)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Redis
 redis_pool = redis.ConnectionPool.from_url(
-    settings.redis_url,
-    decode_responses=True,
-    max_connections=50
+    settings.redis_url, decode_responses=True, max_connections=50
 )
 
 

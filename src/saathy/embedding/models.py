@@ -306,7 +306,7 @@ def create_default_registry() -> ModelRegistry:
     settings = get_settings()
 
     # Add local models
-    for model_name, metadata in PREDEFINED_MODELS.items():
+    for _, metadata in PREDEFINED_MODELS.items():
         if metadata.model_type == "local":
             model = SentenceTransformerModel(metadata, metadata.name)
             registry.register_model(model)

@@ -3,8 +3,8 @@ from .information_needs import InformationNeeds, QueryIntent
 
 __all__ = [
     "ChatSession",
-    "ChatTurn", 
+    "ChatTurn",
     "SessionStatus",
     "InformationNeeds",
-    "QueryIntent"
+    "QueryIntent",
 ]
