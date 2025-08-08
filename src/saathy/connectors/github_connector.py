@@ -1,6 +1,8 @@
 import logging
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, Optional
+
+import aiohttp
 
 from saathy.connectors.base import (
     BaseConnector,
@@ -17,16 +19,40 @@ class GithubConnector(BaseConnector):
 
     def __init__(self, name: str, config: dict[str, Any]):
         super().__init__(name, config)
+        self.token = config.get("token")
+        self.api_base_url = "https://api.github.com"
+        self.session: Optional[aiohttp.ClientSession] = None
 
     async def start(self) -> None:
         """Start the GitHub connector."""
         logger.info(f"Starting {self.name} connector.")
+
+        # Initialize HTTP session for API calls
+        if self.token:
+            headers = {
+                "Authorization": f"token {self.token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Saathy-GitHub-Connector",
+            }
+            self.session = aiohttp.ClientSession(headers=headers)
+            logger.info("GitHub API session initialized with authentication")
+        else:
+            logger.warning("No GitHub token provided, API calls will be rate-limited")
+            self.session = aiohttp.ClientSession()
+
         self.status = ConnectorStatus.ACTIVE
         logger.info(f"{self.name} connector started.")
 
     async def stop(self) -> None:
         """Stop the GitHub connector."""
         logger.info(f"Stopping {self.name} connector.")
+
+        # Close HTTP session
+        if self.session:
+            await self.session.close()
+            self.session = None
+            logger.info("GitHub API session closed")
+
         self.status = ConnectorStatus.INACTIVE
         logger.info(f"{self.name} connector stopped.")
 
@@ -452,3 +478,101 @@ class GithubConnector(BaseConnector):
             f"Extracted {len(processed_items)} content items from issue data for {repo_name} #{issue_number}"
         )
         return processed_items
+
+    # GitHub API methods for manual sync
+    async def fetch_recent_commits(
+        self, repository: str, days_back: int = 7
+    ) -> list[dict]:
+        """Fetch recent commits from a repository using GitHub API."""
+        if not self.session:
+            logger.error("GitHub session not initialized")
+            return []
+
+        try:
+            since_date = (
+                datetime.utcnow() - timedelta(days=days_back)
+            ).isoformat() + "Z"
+            url = f"{self.api_base_url}/repos/{repository}/commits"
+            params = {
+                "since": since_date,
+                "per_page": 100,  # Max allowed by GitHub API
+            }
+
+            async with self.session.get(url, params=params) as response:
+                if response.status == 200:
+                    commits = await response.json()
+                    logger.info(f"Fetched {len(commits)} commits from {repository}")
+                    return commits
+                else:
+                    error_text = await response.text()
+                    logger.error(f"GitHub API error: {response.status} - {error_text}")
+                    return []
+
+        except Exception as e:
+            logger.error(f"Error fetching commits from {repository}: {e}")
+            return []
+
+    async def fetch_recent_issues(
+        self, repository: str, days_back: int = 7
+    ) -> list[dict]:
+        """Fetch recent issues from a repository using GitHub API."""
+        if not self.session:
+            logger.error("GitHub session not initialized")
+            return []
+
+        try:
+            since_date = (
+                datetime.utcnow() - timedelta(days=days_back)
+            ).isoformat() + "Z"
+            url = f"{self.api_base_url}/repos/{repository}/issues"
+            params = {
+                "since": since_date,
+                "state": "all",  # Both open and closed
+                "per_page": 100,
+            }
+
+            async with self.session.get(url, params=params) as response:
+                if response.status == 200:
+                    issues = await response.json()
+                    logger.info(f"Fetched {len(issues)} issues from {repository}")
+                    return issues
+                else:
+                    error_text = await response.text()
+                    logger.error(f"GitHub API error: {response.status} - {error_text}")
+                    return []
+
+        except Exception as e:
+            logger.error(f"Error fetching issues from {repository}: {e}")
+            return []
+
+    async def fetch_recent_pulls(
+        self, repository: str, days_back: int = 7
+    ) -> list[dict]:
+        """Fetch recent pull requests from a repository using GitHub API."""
+        if not self.session:
+            logger.error("GitHub session not initialized")
+            return []
+
+        try:
+            _ = (
+                datetime.utcnow() - timedelta(days=days_back)
+            ).isoformat() + "Z"
+            url = f"{self.api_base_url}/repos/{repository}/pulls"
+            params = {
+                "state": "all",  # Both open and closed
+                "per_page": 100,
+            }
+
+            async with self.session.get(url, params=params) as response:
+                if response.status == 200:
+                    pulls = await response.json()
+                    logger.info(f"Fetched {len(pulls)} pull requests from {repository}")
+                    return pulls
+                else:
+                    error_text = await response.text()
+                    logger.error(f"GitHub API error: {response.status} - {error_text}")
+                    return []
+
+        except Exception as e:
+            logger.error(f"Error fetching pull requests from {repository}: {e}")
+            return []

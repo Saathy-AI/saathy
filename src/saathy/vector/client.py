@@ -73,7 +73,10 @@ class QdrantClientWrapper:
         if self._client is None:
             try:
                 if self.url:
-                    client_kwargs = {"url": self.url, "timeout": self.timeout}
+                    client_kwargs = {
+                        "url": self.url,
+                        "timeout": self.timeout,
+                    }
                     if self.api_key:
                         client_kwargs["api_key"] = self.api_key
                     self._client = QdrantClient(**client_kwargs)
@@ -158,7 +161,7 @@ class QdrantClientWrapper:
             return False
 
     async def ensure_collection_exists(self, collection_name: str = None) -> None:
-        """Ensure collection exists, create if it doesn't."""
+        """Ensure collection exists with correct configuration, recreate if needed."""
         collection_name = collection_name or self.collection_name
 
         try:
@@ -185,7 +188,45 @@ class QdrantClientWrapper:
 
                 logger.info(f"Collection '{collection_name}' created successfully")
             else:
-                logger.debug(f"Collection '{collection_name}' already exists")
+                # Check if existing collection has correct vector size
+                try:
+                    collection_info = await self.get_collection_info(collection_name)
+                    existing_vector_size = collection_info["config"]["vector_size"]
+
+                    if existing_vector_size != self.vector_size:
+                        logger.warning(
+                            f"Collection '{collection_name}' has vector size {existing_vector_size}, "
+                            f"but expected {self.vector_size}. Recreating collection."
+                        )
+
+                        # Delete existing collection
+                        await self.delete_collection(collection_name)
+
+                        # Create new collection with correct vector size
+                        await self._execute_with_retry(
+                            "create_collection",
+                            lambda client: client.create_collection(
+                                collection_name=collection_name,
+                                vectors_config=models.VectorParams(
+                                    size=self.vector_size,
+                                    distance=self.distance,
+                                ),
+                            ),
+                        )
+
+                        logger.info(
+                            f"Collection '{collection_name}' recreated with vector size {self.vector_size}"
+                        )
+                    else:
+                        logger.debug(
+                            f"Collection '{collection_name}' already exists with correct configuration"
+                        )
+
+                except Exception as e:
+                    logger.warning(
+                        f"Could not verify collection configuration, assuming it's correct: {e}"
+                    )
+                    logger.debug(f"Collection '{collection_name}' already exists")
 
         except Exception as e:
             logger.error(

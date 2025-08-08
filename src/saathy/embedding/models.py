@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
-import torch
-from sentence_transformers import SentenceTransformer
 
 from ..config import get_settings
 
@@ -63,31 +61,49 @@ class SentenceTransformerModel(EmbeddingModel):
     def __init__(self, metadata: ModelMetadata, model_name: str):
         super().__init__(metadata)
         self.model_name = model_name
-        self._model: Optional[SentenceTransformer] = None
+        # Deferred import: avoid importing heavy libs at module import time
+        # Use Any for model type to keep imports lazy and prevent startup failures
+        self._model: Optional[Any] = None
 
     async def load(self) -> None:
         """Load the sentence transformer model."""
         try:
-            # Detect GPU availability
-            if torch.cuda.is_available():
-                self._device = "cuda"
-                logger.info(f"Using GPU for model {self.metadata.name}")
-            else:
-                self._device = "cpu"
-                logger.info(f"Using CPU for model {self.metadata.name}")
+            logger.info(f"Loading SentenceTransformer model: {self.model_name}")
 
-            # Load model with device specification
-            self._model = SentenceTransformer(self.model_name, device=self._device)
+            # Check if sentence_transformers is available
+            try:
+                from sentence_transformers import SentenceTransformer
+            except ImportError as e:
+                logger.error(f"sentence_transformers package not available: {e}")
+                raise ImportError(
+                    f"sentence_transformers package not available: {e}"
+                ) from e
+
+            # Load the model
+            self._model = SentenceTransformer(self.model_name)
+
+            # Determine device
+            import torch
+
+            self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            logger.info(f"Model {self.model_name} loaded on device: {self._device}")
 
             # Warm up the model
             await self._warmup()
 
             self._is_loaded = True
-            logger.info(f"Successfully loaded model {self.metadata.name}")
+            logger.info(
+                f"SentenceTransformer model {self.model_name} loaded successfully"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to load model {self.metadata.name}: {e}")
-            raise
+            logger.error(
+                f"Failed to load SentenceTransformer model {self.model_name}: {e}"
+            )
+            self._is_loaded = False
+            raise RuntimeError(
+                f"Failed to load SentenceTransformer model {self.model_name}: {e}"
+            ) from e
 
     async def _warmup(self) -> None:
         """Warm up the model with sample input."""
@@ -113,7 +129,9 @@ class SentenceTransformerModel(EmbeddingModel):
             return embeddings
         except Exception as e:
             logger.error(f"Embedding generation failed for {self.metadata.name}: {e}")
-            raise
+            raise RuntimeError(
+                f"Embedding generation failed for {self.metadata.name}: {e}"
+            ) from e
 
 
 class OpenAIModel(EmbeddingModel):
@@ -306,7 +324,7 @@ def create_default_registry() -> ModelRegistry:
     settings = get_settings()
 
     # Add local models
-    for model_name, metadata in PREDEFINED_MODELS.items():
+    for _, metadata in PREDEFINED_MODELS.items():
         if metadata.model_type == "local":
             model = SentenceTransformerModel(metadata, metadata.name)
             registry.register_model(model)

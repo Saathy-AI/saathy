@@ -32,7 +32,7 @@ class Settings(BaseSettings):
         default="documents", description="Qdrant collection name"
     )
     qdrant_vector_size: int = Field(
-        default=384, description="Vector dimensions for embeddings"
+        default=1536, description="Vector dimensions for embeddings"
     )
 
     # External API settings

@@ -1,6 +1,6 @@
 """Slack connector using Socket Mode for real-time message processing."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from slack_sdk.web.async_client import AsyncWebClient
@@ -226,3 +226,50 @@ class SlackConnector(BaseConnector):
         except Exception as e:
             self.logger.error(f"Error getting user info: {e}")
             return None
+
+    async def fetch_recent_messages(
+        self, channel_id: str, minutes: int = 15
+    ) -> list[ProcessedContent]:
+        """Fetch messages from the last N minutes from a channel."""
+        if not self.web_client:
+            self.logger.error("Web client not initialized")
+            return []
+
+        try:
+            # Calculate the timestamp for N minutes ago
+            oldest_timestamp = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+            oldest_ts = str(oldest_timestamp.timestamp())
+
+            response = await self.web_client.conversations_history(
+                channel=channel_id,
+                oldest=oldest_ts,
+                limit=100,  # Slack API max limit per request
+            )
+
+            if not response["ok"]:
+                self.logger.error(
+                    f"Failed to get channel history: {response.get('error')}"
+                )
+                return []
+
+            messages = []
+            response_messages = response.get("messages", [])
+
+            # Filter out messages we've already processed
+            for message in response_messages:
+                # Skip bot messages, edited messages, and other subtypes
+                if message.get("subtype") or message.get("bot_id"):
+                    continue
+
+                content = await self._extract_message_content(message)
+                if content:
+                    messages.append(content)
+
+            self.logger.info(
+                f"Fetched {len(messages)} recent messages from channel {channel_id}"
+            )
+            return messages
+
+        except Exception as e:
+            self.logger.error(f"Error fetching recent messages: {e}")
+            return []

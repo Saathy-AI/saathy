@@ -210,3 +210,7 @@ __marimo__/
 .cursor/
 .cursor/rules/
 .cursorrules
+
+# Node.js
+# Ignore all node_modules directories across the repo
+node_modules/
