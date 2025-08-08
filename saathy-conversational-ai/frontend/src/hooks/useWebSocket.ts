@@ -41,7 +41,24 @@ export const useWebSocket = ({ sessionId, onMessage, enabled = true }: UseWebSoc
 
       ws.current.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
+          const data = JSON.parse(event.data);
+          
+          // Handle both v1 and v2 message formats
+          let message: WebSocketMessage;
+          
+          // v2 format has 'type' at root level
+          if (data.type) {
+            message = data;
+          } else {
+            // v1 format - adapt to v2
+            message = {
+              type: data.message ? 'response' : 'connected',
+              data: data,
+              response: data.message,
+              sessionId: sessionId,
+            };
+          }
+          
           onMessage(message);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
