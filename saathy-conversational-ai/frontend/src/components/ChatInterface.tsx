@@ -29,25 +29,29 @@ export const ChatInterface: React.FC = () => {
         console.log('Connected to chat session:', message.sessionId);
         break;
       
-      case 'response':
-        const responseData = message.data;
+      case 'response': {
+        const responseData = message.data || {};
+        const content = responseData.message || responseData.response || message.response || '';
+        const ts = responseData.timestamp || new Date().toISOString();
+        const sources = responseData.contextSources || responseData.context_sources || message.context_used;
         const newMessage: ChatMessage = {
           id: Date.now().toString(),
-          content: responseData.message,
+          content,
           role: 'assistant',
-          timestamp: new Date(responseData.timestamp),
-          contextSources: responseData.contextSources,
+          timestamp: new Date(ts),
+          contextSources: sources,
         };
         setMessages((prev) => [...prev, newMessage]);
         setIsTyping(false);
         break;
+      }
       
       case 'typing':
-        setIsTyping(message.isTyping || false);
+        setIsTyping(Boolean((message as any).isTyping) || (message as any).status === 'processing');
         break;
       
       case 'error':
-        setError(message.error || 'An error occurred');
+        setError((message as any).error || 'An error occurred');
         setIsTyping(false);
         break;
     }
@@ -65,10 +69,11 @@ export const ChatInterface: React.FC = () => {
     
     try {
       const session = await chatAPI.createSession();
-      if (!session.sessionId) {
+      const sid = (session as any).sessionId || (session as any).id;
+      if (!sid) {
         throw new Error('Failed to create session: no session ID returned');
       }
-      setSessionId(session.sessionId);
+      setSessionId(sid);
       
       // Add welcome message
       const welcomeMessage: ChatMessage = {
@@ -125,13 +130,15 @@ export const ChatInterface: React.FC = () => {
     
     try {
       const response = await chatAPI.sendMessage(sessionId, messageText);
-      
+      const content = response.message || response.response || '';
+      const ts = (response as any).timestamp || new Date().toISOString();
+      const sources = response.contextSources || (response as any).context_used;
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
-        content: response.message || 'No response received',
+        content: content || 'No response received',
         role: 'assistant',
-        timestamp: new Date(response.timestamp || new Date()),
-        contextSources: response.contextSources,
+        timestamp: new Date(ts),
+        contextSources: sources,
       };
       
       setMessages((prev) => [...prev, assistantMessage]);
@@ -190,8 +197,8 @@ export const ChatInterface: React.FC = () => {
           ) : (
             <>
               {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
-              ))}
+                <MessageBubble key={message.id} message={message} />)
+              )}
               
               {isTyping && <TypingIndicator />}
               
