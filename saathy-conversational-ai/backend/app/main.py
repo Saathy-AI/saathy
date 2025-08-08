@@ -4,7 +4,7 @@ from config.settings import get_settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import chat
+from app.api import chat, chat_endpoints_v2
 from app.models.chat_session import Base
 from app.utils.database import engine
 
@@ -42,6 +42,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(chat.router)
+app.include_router(chat_endpoints_v2.router)
 
 
 # Health check
