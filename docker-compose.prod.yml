@@ -13,11 +13,11 @@ networks:
     driver: bridge
 
 services:
-  api:
+  core-api:
     build:
-      context: .
+      context: ./apps/core-api
       dockerfile: Dockerfile
-    container_name: saathy-api
+    container_name: saathy-core-api
     restart: unless-stopped
     depends_on:
       - qdrant

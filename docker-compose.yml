@@ -1,0 +1,135 @@
+version: "3.8"
+
+networks:
+  saathy-net:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+  postgres_data:
+  redis_data:
+
+services:
+  # Core API Service
+  core-api:
+    build:
+      context: ./apps/core-api
+      dockerfile: Dockerfile
+    container_name: saathy-core-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://saathy:saathy@postgres:5432/saathy
+    depends_on:
+      - qdrant
+      - redis
+      - postgres
+    networks:
+      - saathy-net
+    volumes:
+      - ./apps/core-api/src:/app/src:ro
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Conversational AI Backend
+  conv-backend:
+    build:
+      context: ./apps/conversational-ai/backend
+      dockerfile: Dockerfile
+    container_name: saathy-conv-backend
+    ports:
+      - "8001:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - CORE_API_URL=http://core-api:8000
+      - DATABASE_URL=postgresql://saathy:saathy@postgres:5432/saathy_conv
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - core-api
+      - postgres
+      - redis
+    networks:
+      - saathy-net
+    volumes:
+      - ./apps/conversational-ai/backend/app:/app/app:ro
+
+  # Conversational AI Frontend
+  conv-frontend:
+    build:
+      context: ./apps/conversational-ai/frontend
+      dockerfile: Dockerfile
+    container_name: saathy-conv-frontend
+    ports:
+      - "3001:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+    depends_on:
+      - conv-backend
+    networks:
+      - saathy-net
+
+  # Vector Database
+  qdrant:
+    image: qdrant/qdrant:v1.11.4
+    container_name: saathy-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - saathy-net
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: saathy-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=saathy
+      - POSTGRES_PASSWORD=saathy
+      - POSTGRES_DB=saathy
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/conversational-ai/backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - saathy-net
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: saathy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - saathy-net
+    command: redis-server --appendonly yes
+
+  # Development Tools
+  adminer:
+    image: adminer:latest
+    container_name: saathy-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - saathy-net
+    depends_on:
+      - postgres
+
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    container_name: saathy-redisinsight
+    ports:
+      - "8002:8001"
+    networks:
+      - saathy-net
+    depends_on:
+      - redis
